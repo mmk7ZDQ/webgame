@@ -30,7 +30,7 @@ mkdir -p "$RWT"
 
 # 1) rwutil（含手写层）
 rm -rf "$B/rwutil"; mkdir -p "$B/rwutil"
-"$JAVAC" -nowarn -d "$B/rwutil" impl/rwutil/rwutil/*.java
+"$JAVAC" -nowarn -cp "$LIB/*" -d "$B/rwutil" impl/rwutil/rwutil/*.java
 (cd "$B/rwutil" && jar cf ../rwutil.jar .)
 
 # 2) 字节码变换链

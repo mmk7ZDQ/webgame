@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>XML 解析测试</title>
+<style>body{background:#0d1117;color:#c9d1d9;font:11px ui-monospace,monospace;padding:10px}
+pre{white-space:pre-wrap;line-height:1.4}#log{color:#8b949e}</style></head><body>
+<pre id="out">loading…</pre><pre id="log"></pre>
+<script src="assets-bundle.js"></script>
+<script>window.onerror=function(m,u,l){console.log('JS:',m,l);return false;};</script>
+<script src="classes-engine.js"></script>
+<script>
+const el=document.getElementById('out'),log=[];
+try{main([]);log.push('main 返回');}
+catch(e){log.push('捕获: '+(e&&e.message?e.message:e));}
+const lines=(document.getElementById('log').textContent||'').split('\n').filter(Boolean);
+const hit=lines.filter(l=>/^\[step\] (4[0-9]|5[0-9])|ok:|FAILED/.test(l));
+log.push('--- 关键步骤 ---');log.push(hit.length?hit.join('\n'):'(无)');
+el.textContent=log.join('\n');
+</script></body></html>

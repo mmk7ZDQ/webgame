@@ -20,3 +20,5 @@ __pycache__/
 # 分析中间产物
 calls.json
 *.apk
+demo/classes-engine.js
+demo/enginetest.html

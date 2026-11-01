@@ -925,6 +925,21 @@ public class Bootstrap {
             java.io.InputStream is = ctx.getAssets().open(mapName);
             int n = is == null ? -1 : is.available();
             step("49 asset read: " + mapName + " -> " + n + " bytes");
+
+            // XML 真解析：走浏览器的 DOMParser
+            java.io.InputStream is2 = ctx.getAssets().open(mapName);
+            rwutil.Xml.Document doc = rwutil.Xml.Factory.newInstance()
+                    .newDocumentBuilder().parse(is2);
+            if (doc == null) {
+                step("50 parse -> null");
+            } else {
+                rwutil.Xml.Element root = doc.getDocumentElement();
+                step("50 xml root=" + (root == null ? "null" : root.getTagName())
+                        + " w=" + (root == null ? "?" : root.getAttribute("width"))
+                        + " h=" + (root == null ? "?" : root.getAttribute("height")));
+                rwutil.Xml.NodeList ts = root == null ? null : root.getElementsByTagName("tileset");
+                step("51 tilesets=" + (ts == null ? -1 : ts.getLength()));
+            }
         } catch (Throwable e) {
             step("49 asset FAILED: " + e);
         }
