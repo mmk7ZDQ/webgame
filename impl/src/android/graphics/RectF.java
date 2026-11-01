@@ -69,6 +69,12 @@ public class RectF {
 
     public void union(RectF r) { if (r != null) union(r.left, r.top, r.right, r.bottom); }
 
+    public static boolean intersects(RectF a, RectF b) {
+        return a != null && b != null
+                && a.left < b.right && b.left < a.right
+                && a.top < b.bottom && b.top < a.bottom;
+    }
+
     public void sort() {
         if (left > right) { float tmp = left; left = right; right = tmp; }
         if (top > bottom) { float tmp = top; top = bottom; bottom = tmp; }

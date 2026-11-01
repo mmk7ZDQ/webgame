@@ -352,6 +352,18 @@ public class Paint {
 
     // ---------------------------------------------------------------- 其它
 
+    private Xfermode xfermode;
+
+    public Xfermode setXfermode(Xfermode x) {
+        Xfermode old = this.xfermode;
+        this.xfermode = x;
+        return old;
+    }
+
+    public Xfermode getXfermode() {
+        return xfermode;
+    }
+
     public ColorFilter getColorFilter() {
         return colorFilter;
     }

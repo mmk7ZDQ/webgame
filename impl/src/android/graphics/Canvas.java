@@ -108,8 +108,22 @@ public class Canvas {
         if (ctx != null) ctx.scale(sx, sy);
     }
 
+    public void scale(float sx, float sy, float px, float py) {
+        if (ctx == null) return;
+        ctx.translate(px, py);
+        ctx.scale(sx, sy);
+        ctx.translate(-px, -py);
+    }
+
     public void rotate(float degrees) {
         if (ctx != null) ctx.rotate(Math.toRadians(degrees));
+    }
+
+    public void rotate(float degrees, float px, float py) {
+        if (ctx == null) return;
+        ctx.translate(px, py);
+        ctx.rotate(Math.toRadians(degrees));
+        ctx.translate(-px, -py);
     }
 
     public void skew(float sx, float sy) {

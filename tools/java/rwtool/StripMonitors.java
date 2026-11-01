@@ -28,11 +28,48 @@ import org.objectweb.asm.Opcodes;
 
 public final class StripMonitors {
 
+    /** TeaVM classlib 未实现、需要重定向到我们自己的实现的类 */
+    private static final String[][] REDIRECT = {
+        {"java/util/concurrent/ConcurrentLinkedQueue", "rwutil/ConcurrentLinkedQueue"},
+        {"java/util/concurrent/LinkedBlockingQueue",  "rwutil/LinkedBlockingQueue"},
+        {"java/util/concurrent/locks/ReentrantLock",  "rwutil/ReentrantLock"},
+        {"java/util/concurrent/locks/ReentrantReadWriteLock", "rwutil/ReentrantLock"},
+        {"java/util/concurrent/ExecutorService",      "rwutil/ExecutorService"},
+        {"java/util/concurrent/Executors",            "rwutil/Executors"},
+        {"java/util/concurrent/Future",               "rwutil/Future"},
+        {"java/util/concurrent/ExecutorCompletionService", "rwutil/ExecutorCompletionService"},
+        {"java/net/ServerSocket",     "rwutil/Net$ServerSocket"},
+        {"java/net/Socket",           "rwutil/Net$Socket"},
+        {"java/net/DatagramSocket",   "rwutil/Net$DatagramSocket"},
+        {"java/net/DatagramPacket",   "rwutil/Net$DatagramPacket"},
+        {"java/net/InetAddress",      "rwutil/Net$InetAddress"},
+        {"java/net/NetworkInterface", "rwutil/Net$NetworkInterface"},
+        {"java/net/SocketException",  "rwutil/Net$SocketException"},
+        {"java/net/InetSocketAddress","rwutil/Net$InetSocketAddress"},
+        {"java/net/UnknownHostException", "rwutil/Net$UnknownHostException"},
+        {"java/util/concurrent/LinkedBlockingDeque", "rwutil/Net$LinkedBlockingDeque"},
+    };
+
+    /** 方法级重定向：{owner, name, desc, newOwner, newName} */
+    private static final String[][] METHOD_REDIRECT = {
+        {"java/lang/System", "exit", "(I)V", "rwutil/RT", "exit"},
+        {"java/lang/Runtime", "halt", "(I)V", "rwutil/RT", "halt"},
+        {"java/lang/Runtime", "maxMemory", "()J", "rwutil/RT", "maxMemory"},
+        {"java/lang/Runtime", "totalMemory", "()J", "rwutil/RT", "totalMemory"},
+        {"java/lang/Runtime", "freeMemory", "()J", "rwutil/RT", "freeMemory"},
+        {"java/lang/Thread", "getAllStackTraces", "()Ljava/util/Map;", "rwutil/RT", "getAllStackTraces"},
+        {"java/lang/Thread", "getState", "()Ljava/lang/Thread$State;", "rwutil/RT", "getState"},
+        {"java/util/ResourceBundle", "clearCache", "()V", "rwutil/RT", "clearCache"},
+        {"java/util/Locale", "getISO3Language", "()Ljava/lang/String;", "rwutil/RT", "getISO3Language"},
+    };
+
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             System.err.println("用法: java rwtool.StripMonitors <in.jar> <out.jar>");
             System.exit(2);
         }
+        java.util.Map<String, String> remap = new java.util.HashMap<String, String>();
+        for (String[] p : REDIRECT) remap.put(p[0], p[1]);
         int stripped = 0, classes = 0;
 
         try (ZipFile in = new ZipFile(args[0]);
@@ -48,12 +85,26 @@ public final class StripMonitors {
                     int[] cnt = new int[1];
                     ClassReader cr = new ClassReader(data);
                     ClassWriter cw = new ClassWriter(0);
-                    ClassVisitor cv = new ClassVisitor(Opcodes.ASM9, cw) {
+                    final ClassVisitor target = new ClassVisitor(Opcodes.ASM9, cw) {
                         @Override
                         public MethodVisitor visitMethod(int access, String name, String desc,
                                                          String sig, String[] ex) {
                             MethodVisitor mv = super.visitMethod(access, name, desc, sig, ex);
                             return new MethodVisitor(Opcodes.ASM9, mv) {
+                                @Override
+                                public void visitMethodInsn(int opcode, String owner, String name,
+                                                            String desc, boolean itf) {
+                                    for (String[] r : METHOD_REDIRECT) {
+                                        if (r[0].equals(owner) && r[1].equals(name) && r[2].equals(desc)) {
+                                            owner = r[3];
+                                            name = r[4];
+                                            itf = false;
+                                            break;
+                                        }
+                                    }
+                                    super.visitMethodInsn(opcode, owner, name, desc, itf);
+                                }
+
                                 @Override
                                 public void visitInsn(int opcode) {
                                     if (opcode == Opcodes.MONITORENTER || opcode == Opcodes.MONITOREXIT) {
@@ -66,7 +117,9 @@ public final class StripMonitors {
                             };
                         }
                     };
-                    cr.accept(cv, 0);
+                    ClassVisitor remapper = new org.objectweb.asm.commons.ClassRemapper(
+                            target, new org.objectweb.asm.commons.SimpleRemapper(remap));
+                    cr.accept(remapper, 0);
                     data = cw.toByteArray();
                     stripped += cnt[0];
                 }

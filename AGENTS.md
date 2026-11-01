@@ -274,7 +274,21 @@ engine.a(ctx);                                                  // k.a(Context)
 2. **桩类只有无参构造**，导致 `new PointF(x, y)` 这类调用全部缺符号。
    `gen-stubs.py` 现在会从 method_ids 里收集所有 `<init>` 签名并逐个生成构造器重载。
 
-**当前卡点：69 个缺失符号**，分三类：
+**运行时补齐（`impl/rwutil/`）**
+
+`java.util.concurrent.*` 与 `java.net.*` 在 TeaVM classlib 里要么没有、要么不完整，
+而 RW 的引擎大量使用。解决办法是**类级重定向**：自己在 `rwutil` 包下写等价实现，
+再用 ASM 把 RW 字节码里的引用整体改指向 `rwutil.*`（`StripMonitors` 同时做 monitor 剥离、
+类重定向、方法重定向三件事）。
+
+已提供：`ConcurrentLinkedQueue`、`LinkedBlockingQueue`、`ReentrantLock`（单线程恒可获取）、
+`ExecutorService`/`Executors`/`Future`（同步执行）、`Net$*`（socket 桩）、`RT`（System/Runtime 补丁）。
+
+> 注意：TeaVM 的 classlib **优先于外部 classpath**，直接在 jar 里放 `java.*` 类会被忽略，
+> 必须走重定向。
+
+**当前卡点：约 35 个缺失符号**，且呈震荡态势 —— 修好一批后 TeaVM 能继续分析更深的代码，
+暴露新的一批（最近一轮冒出了 `org.apache.http.*`）。说明 `game.i` 的依赖树比预期深得多。
 
 | 类别 | 例子 | 难度 |
 |---|---|---|
@@ -404,3 +418,4 @@ engine.a(ctx);                                                  // k.a(Context)
 | 2026-11-01 | 第十六轮：**相机 + 主循环**。`requestAnimationFrame` 驱动，离屏地图裁剪到视口，拖拽平移 + 滚轮缩放 + FPS（`docs/m1-camera.png`）；站点整理为 `demo/`（预编译产物入库，Pages 免构建）；完成首次 git 提交 |
 | 2026-11-01 | 第十七轮：**单位实体化**。从 Units 层提取 64 个坐标，用真实 `tank.png` + `tank_turret.png` 分层绘制（车体固定、炮塔独立旋转，`tank.ini` 的 imageScale 0.8）；单位随相机平移缩放（`docs/m1-units.png`）|
 | 2026-11-01 | 第十八轮：**扫清引擎初始化的两个硬障碍**。① TeaVM 遇 monitor 指令 NPE → 写 ASM 工具把 1,100 条 monitor 换成 NOP（`build/rw-nosync.jar`），分析阶段从崩溃变为 13.8 秒通过；② gen-stubs 生成全部构造器重载；③ 手写 `android.content.Context` / `SharedPreferences`。当前卡在 69 个缺失符号 |
+| 2026-11-01 | 第十九轮：**运行时补齐 + 类/方法级重定向**。新增 `impl/rwutil/`（并发队列、锁、执行器、socket 桩、RT 补丁）；`StripMonitors` 扩展为「monitor 剥离 + 类重定向 + 方法重定向」三合一。缺失符号 87 → 35，但呈震荡（每修一批暴露新一批） |
