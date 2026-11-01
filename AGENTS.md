@@ -37,6 +37,9 @@ SHA-256 `f581e6852db3e22a2ce0521264b32386e2f7c1234342a382bb1da3c683cbe17a`
 - **相机与主循环已就位**：离屏地图只画一次，之后 `requestAnimationFrame` 驱动每帧从它裁剪
   一块贴到视口，支持拖拽平移与滚轮缩放（`docs/m1-camera.png`）。这是真机 `ak.run()`
   的 tick+render 循环在 Web 端的对应形态。
+- **单位已实体化**：从地图 `Units` 层提取 64 个坐标，用 `units/tanks/tank.png`（车体）
+  与 `tank_turret.png`（炮塔，独立旋转）绘制，并按 `tank.ini` 的 `imageScale:0.8` 缩放
+  （`docs/m1-units.png`）。单位跟随相机一起平移缩放。
 - **阶段 2 起步：GLES20 → WebGL1 已跑通**。`android.opengl.GLES20` 的 53 个方法
   已用 WebGL1 实现（int 句柄 ↔ JS 对象映射表），实测编译 GLSL ES 着色器并画出渐变三角形
   （`docs/m1-webgl.png`，`readPixels` 回读确认 `err=0`）。这是游戏战场渲染的前提。
@@ -75,6 +78,7 @@ RW 图像链路        Bitmap → m/e → m/h → Canvas.drawBitmap 实测通过
 真实游戏资源       assets/units/tanks/tank.png 在浏览器内渲染成功 ✅
 真实关卡渲染       关卡 1「Dividing River」三层（地形+装饰+单位）16875 tile / 220ms ✅
 相机 + 主循环      rAF 驱动、拖拽平移、滚轮缩放，1:1 像素视口 481 类 / 1.1 MB ✅
+单位实体          64 个单位实体化（车体 + 炮塔分层，随相机缩放平移）✅
 资源 eager 首屏    0.8 MB（总计 20.7 MB，其余懒加载）
 全链路重建         16.7 秒（build.sh all，从零）
 ```
@@ -247,6 +251,7 @@ python3 tools/dex-flow.py app.apk --entry GameViewOpenGL.onDrawFrame
 - [x] **RW 渲染器可运行**：`b/t` 实例化 + `b()`（glClear）实测通过，glError=0
 - [x] **真实关卡渲染**：TMX → JSON 转换器 + 三层叠加渲染，16875 tile / 220ms
 - [x] **相机 + rAF 主循环**：拖拽平移 / 滚轮缩放 / FPS 显示，1:1 像素视口
+- [x] **单位实体化**：64 个单位，车体 + 炮塔分层，跟随相机
 
 ### 未开始
 - [ ] **让 `b/t` 真正画出几何体（卡在这）** —— 当前状态与已排除项：
@@ -365,3 +370,4 @@ python3 tools/dex-flow.py app.apk --entry GameViewOpenGL.onDrawFrame
 | 2026-11-01 | 第十四轮：**GL 调用级调试**。发现 shader 名必须匹配 `g[]` 里的 `aPosition/uMatrix/uColor/uProjection`；发现 `b/t` 用 client-side vertex array 并为此补了临时 VBO；用 `GLES20.sink` 钩子把 1281 精确定位到 `vertexAttribPointer` 而非 `drawArrays`（`docs/m1-rw-gl-trace.png`）。仍未画出 |
 | 2026-11-01 | 第十五轮：**真实关卡渲染成功**。`tools/tmx2json.py`（支持外部 .tsx、base64+gzip 解压）；关卡 1 地形+装饰+单位三层共 16875 tile / 220ms（`docs/m1-full-map.png`）；踩了三个时序/类型坑：`window.load` 里的异步不进入截图、JS 的 `undefined` ≠ Java `null`、fetch 不计入 load 事件 |
 | 2026-11-01 | 第十六轮：**相机 + 主循环**。`requestAnimationFrame` 驱动，离屏地图裁剪到视口，拖拽平移 + 滚轮缩放 + FPS（`docs/m1-camera.png`）；站点整理为 `demo/`（预编译产物入库，Pages 免构建）；完成首次 git 提交 |
+| 2026-11-01 | 第十七轮：**单位实体化**。从 Units 层提取 64 个坐标，用真实 `tank.png` + `tank_turret.png` 分层绘制（车体固定、炮塔独立旋转，`tank.ini` 的 imageScale 0.8）；单位随相机平移缩放（`docs/m1-units.png`）|

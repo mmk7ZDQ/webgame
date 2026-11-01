@@ -29,6 +29,8 @@
 <img id="tile9" src="maps/tiles/shallowwater2water_flat.png" style="display:none" alt="">
 <img id="tile10" src="maps/tiles/units.png" style="display:none" alt="">
 <img id="tile11" src="maps/tiles/water.png" style="display:none" alt="">
+<img id="tankBody" src="assets/tank.png" style="display:none" alt="">
+<img id="tankTurret" src="assets/tank_turret.png" style="display:none" alt="">
 <canvas id="tankCanvas" style="display:none"></canvas>
 <canvas id="host"></canvas>
 <div id="hud" style="display:flex;gap:18px;font:12px ui-monospace,monospace;color:#8b949e;margin:6px 0">
@@ -61,7 +63,7 @@
   // 贴图作为 <img> 写在 body 里，解析时就开始加载；全部就绪后立即跑 main。
   // （不能在 window.load 里做——headless 截图在 load 之后立刻拍，会看不到结果）
   const TILE_COUNT = 12;
-  let pending = TILE_COUNT + 1;   // +1 是 tank.png
+  let pending = TILE_COUNT + 3;   // +1 tank.png（旧验证用）+2 车体/炮塔
   const ready = () => { if (--pending === 0) { loadRwMap(); start(); } };
 
   for (let i = 0; i < TILE_COUNT; i++) {
@@ -72,6 +74,11 @@
       el.onerror = () => { domError('贴图失败: ' + el.src); ready(); };
     }
   }
+
+  ['tankBody', 'tankTurret'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.complete && el.naturalWidth) ready(); else { el.onload = ready; el.onerror = ready; }
+  });
 
   const tank = new Image();
   tank.onload = () => {

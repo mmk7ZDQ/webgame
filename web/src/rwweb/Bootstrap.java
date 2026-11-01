@@ -642,8 +642,13 @@ public class Bootstrap {
     private static Bitmap viewBmp;
     private static com.corrodinggames.rts.gameFramework.m.h viewR;
 
+    // ---- 单位 ----
+    private static double[] uX = new double[0], uY = new double[0], uAngle = new double[0];
+    private static Bitmap tankBody, tankTurret;
+    private static final double TANK_SCALE = 0.8;   // 来自 tank.ini 的 imageScale
+
     private static double camX = 1150, camY = 1250;   // 地图坐标（像素）
-    private static double camZoom = 1.0;
+    private static double camZoom = 1.8;
     private static boolean dragging;
     private static int lastX, lastY;
     private static int frameCount;
@@ -676,8 +681,17 @@ public class Bootstrap {
         if (mapEl == null) { step("41 SKIP: 没有离屏地图"); return; }
         mapBmp = Bitmap.fromElement(mapEl);
 
+        // 单位贴图
+        HTMLCanvasElement bodyEl = elById("tankBody");
+        HTMLCanvasElement turretEl = elById("tankTurret");
+        if (bodyEl != null && bodyEl.getWidth() > 0) tankBody = Bitmap.fromElement(bodyEl2Canvas(bodyEl));
+        if (turretEl != null && turretEl.getWidth() > 0) tankTurret = Bitmap.fromElement(turretEl2Canvas(turretEl));
+
+        extractUnits();
+
         step("41 camera ready, map=" + mapBmp.getWidth() + "x" + mapBmp.getHeight()
-                + " view=" + viewEl.getWidth() + "x" + viewEl.getHeight());
+                + " view=" + viewEl.getWidth() + "x" + viewEl.getHeight()
+                + " units=" + uX.length + (tankBody != null ? " tank✓" : " tank✗"));
 
         // 拖拽平移
         org.teavm.jso.dom.events.EventListener down = e -> {
@@ -717,6 +731,45 @@ public class Bootstrap {
         step("42 main loop started (rAF)");
     }
 
+    @org.teavm.jso.JSBody(params = {"id"}, script = "return document.getElementById(id);")
+    private static native HTMLCanvasElement elById(String id);
+
+    /** 把 <img> 画进离屏 canvas，返回该 canvas（Bitmap 需要 canvas 载体） */
+    @org.teavm.jso.JSBody(params = {"img"}, script =
+            "var c=document.createElement('canvas');" +
+            "c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;" +
+            "c.getContext('2d').drawImage(img,0,0); return c;")
+    private static native HTMLCanvasElement bodyEl2Canvas(HTMLCanvasElement img);
+
+    @org.teavm.jso.JSBody(params = {"img"}, script =
+            "var c=document.createElement('canvas');" +
+            "c.width=img.naturalWidth||img.width; c.height=img.naturalHeight||img.height;" +
+            "c.getContext('2d').drawImage(img,0,0); return c;")
+    private static native HTMLCanvasElement turretEl2Canvas(HTMLCanvasElement img);
+
+    /** 从 Units 层提取单位位置（tile 坐标 → 像素坐标） */
+    private static void extractUnits() {
+        int layerCount = mapLayerCount();
+        if (layerCount < 3) return;
+        org.teavm.jso.typedarrays.Int32Array g = mapLayerGids(layerCount - 1);
+        if (g == null) return;
+        int w = mapW(), h = mapH(), TW = 20, TH = 20;
+        int cnt = 0;
+        for (int i = 0; i < w * h; i++) if (g.get(i) != 0) cnt++;
+        uX = new double[cnt]; uY = new double[cnt]; uAngle = new double[cnt];
+        int k = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if (g.get(y * w + x) == 0) continue;
+                uX[k] = x * TW + TW / 2.0;
+                uY[k] = y * TH + TH / 2.0;
+                // 用坐标派生一个稳定的朝向，避免每次刷新都变
+                uAngle[k] = ((x * 37 + y * 91) % 360) * Math.PI / 180.0;
+                k++;
+            }
+        }
+    }
+
     @org.teavm.jso.JSBody(script = "return document.getElementById('mapOffscreen');")
     private static native HTMLCanvasElement mapOffscreenEl();
 
@@ -753,6 +806,34 @@ public class Bootstrap {
         android.graphics.Rect src = new android.graphics.Rect(sx, sy, sx + sw, sy + sh);
         android.graphics.Rect dst = new android.graphics.Rect(0, 0, vw, vh);
         viewCanvas.drawBitmap(mapBmp, src, dst, p);
+
+        // 单位：世界坐标 → 屏幕坐标（与相机同步缩放/平移）
+        Paint up = new Paint();
+        int n = uX.length;
+        for (int i = 0; i < n; i++) {
+            double wx = uX[i], wy = uY[i];
+            double sx2 = (wx - sx) * (double) vw / sw;
+            double sy2 = (wy - sy) * (double) vh / sh;
+            if (sx2 < -40 || sy2 < -40 || sx2 > vw + 40 || sy2 > vh + 40) continue;
+
+            if (tankBody != null) {
+                viewCanvas.save();
+                viewCanvas.translate((float) sx2, (float) sy2);
+                viewCanvas.scale((float) TANK_SCALE, (float) TANK_SCALE);
+                viewCanvas.drawBitmap(tankBody, -tankBody.getWidth() / 2f,
+                        -tankBody.getHeight() / 2f, up);
+                viewCanvas.restore();
+            }
+            if (tankTurret != null) {
+                viewCanvas.save();
+                viewCanvas.translate((float) sx2, (float) sy2);
+                viewCanvas.rotate((float) Math.toDegrees(uAngle[i]));
+                viewCanvas.scale((float) TANK_SCALE, (float) TANK_SCALE);
+                viewCanvas.drawBitmap(tankTurret, -tankTurret.getWidth() / 2f,
+                        -tankTurret.getHeight() / 2f, up);
+                viewCanvas.restore();
+            }
+        }
 
         frameCount++;
         long now = System.currentTimeMillis();
