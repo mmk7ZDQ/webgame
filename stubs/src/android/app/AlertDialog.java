@@ -19,5 +19,6 @@ public class AlertDialog {
         public AlertDialog.Builder setView(android.view.View p0) { return null; }
         public AlertDialog show() { return null; }
         public Builder() { }
+        public Builder(android.content.Context p0) { }
     }
 }

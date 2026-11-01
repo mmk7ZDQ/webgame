@@ -3,4 +3,5 @@ package android.graphics;
 
 public class PorterDuffXfermode {
     public PorterDuffXfermode() { }
+    public PorterDuffXfermode(PorterDuff.Mode p0) { }
 }

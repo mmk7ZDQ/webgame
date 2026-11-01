@@ -3,6 +3,7 @@ package android.widget;
 
 public class RelativeLayout {
     public RelativeLayout() { }
+    public RelativeLayout(android.content.Context p0) { }
 
     public static class LayoutParams {
         public int height;
@@ -12,5 +13,6 @@ public class RelativeLayout {
         public void addRule(int p0) {  }
         public void addRule(int p0, int p1) {  }
         public LayoutParams() { }
+        public LayoutParams(int p0, int p1) { }
     }
 }

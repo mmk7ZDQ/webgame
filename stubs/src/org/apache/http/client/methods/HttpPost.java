@@ -4,4 +4,5 @@ package org.apache.http.client.methods;
 public class HttpPost {
     public void setEntity(org.apache.http.HttpEntity p0) {  }
     public HttpPost() { }
+    public HttpPost(java.lang.String p0) { }
 }

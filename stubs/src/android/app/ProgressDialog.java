@@ -7,4 +7,5 @@ public class ProgressDialog {
     public void setMessage(java.lang.CharSequence p0) {  }
     public void setProgressStyle(int p0) {  }
     public ProgressDialog() { }
+    public ProgressDialog(android.content.Context p0) { }
 }

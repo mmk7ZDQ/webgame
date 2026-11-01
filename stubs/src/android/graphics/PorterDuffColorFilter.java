@@ -3,4 +3,5 @@ package android.graphics;
 
 public class PorterDuffColorFilter {
     public PorterDuffColorFilter() { }
+    public PorterDuffColorFilter(int p0, PorterDuff.Mode p1) { }
 }

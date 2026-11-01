@@ -8,4 +8,5 @@ public class b {
 
     public void run() {  }
     public b() { }
+    public b(java.lang.String[] p0, android.app.Activity p1) { }
 }

@@ -10,4 +10,5 @@ public class ResultReceiver {
     public int describeContents() { return 0; }
     public void writeToParcel(android.os.Parcel p0, int p1) {  }
     public ResultReceiver() { }
+    public ResultReceiver(android.os.Parcel p0) { }
 }

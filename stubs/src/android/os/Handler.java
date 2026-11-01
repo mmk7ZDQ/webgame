@@ -7,4 +7,5 @@ public class Handler {
     public boolean sendEmptyMessage(int p0) { return false; }
     public boolean sendMessage(Message p0) { return false; }
     public Handler() { }
+    public Handler(Looper p0) { }
 }

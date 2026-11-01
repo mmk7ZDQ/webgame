@@ -8,4 +8,5 @@ public class f {
 
     public void run() {  }
     public f() { }
+    public f(ResultReceiver p0, int p1, android.os.Bundle p2) { }
 }

@@ -4,4 +4,5 @@ package android.widget;
 public class ListView {
     public void onDraw(android.graphics.Canvas p0) {  }
     public ListView() { }
+    public ListView(android.content.Context p0, android.util.AttributeSet p1) { }
 }

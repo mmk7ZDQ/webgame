@@ -9,4 +9,5 @@ public class EditText {
     public void setOnKeyListener(android.view.View.OnKeyListener p0) {  }
     public void setText(java.lang.CharSequence p0) {  }
     public EditText() { }
+    public EditText(android.content.Context p0) { }
 }

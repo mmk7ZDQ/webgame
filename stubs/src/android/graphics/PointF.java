@@ -9,4 +9,5 @@ public class PointF {
     public void set(float p0, float p1) {  }
     public void set(PointF p0) {  }
     public PointF() { }
+    public PointF(float p0, float p1) { }
 }

@@ -7,4 +7,5 @@ public class c {
     public void a(int p0, android.os.Bundle p1) {  }
     public android.os.IBinder asBinder() { return null; }
     public c() { }
+    public c(android.os.IBinder p0) { }
 }

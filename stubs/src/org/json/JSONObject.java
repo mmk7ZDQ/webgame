@@ -5,4 +5,5 @@ public class JSONObject {
     public JSONObject getJSONObject(java.lang.String p0) { return null; }
     public java.lang.String getString(java.lang.String p0) { return null; }
     public JSONObject() { }
+    public JSONObject(java.lang.String p0) { }
 }

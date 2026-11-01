@@ -25,6 +25,7 @@ public class View {
     public void setTag(java.lang.Object p0) {  }
     public void setVisibility(int p0) {  }
     public View() { }
+    public View(android.content.Context p0, android.util.AttributeSet p1) { }
 
     public static class MeasureSpec {
         public static int getMode(int p0) { return 0; }

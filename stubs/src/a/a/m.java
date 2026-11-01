@@ -6,4 +6,6 @@ public class m {
 
     public void run() {  }
     public m() { }
+    public m(h p0) { }
+    public m(h p0, byte p1) { }
 }

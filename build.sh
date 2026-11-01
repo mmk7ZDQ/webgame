@@ -30,7 +30,7 @@ IMPL_SRC="impl/src"
 # 这些类由 impl/src 手写实现（Web Canvas2D 后端），不由生成器产出
 # launcher 源码里需要写 "包.类" 形式、而该包名同时又是类名的，必须从这里剔除
 LAUNCHER_STRIP="com/corrodinggames/rts/gameFramework/b,com/corrodinggames/rts/gameFramework/m"
-IMPL_CLASSES="android/opengl/GLES20,android/graphics/Canvas,android/graphics/Paint,android/graphics/Bitmap,android/graphics/Color,android/graphics/Rect,android/graphics/RectF,android/graphics/Matrix,android/graphics/Path,android/graphics/PorterDuff"
+IMPL_CLASSES="android/content/Context,android/content/SharedPreferences,android/opengl/GLES20,android/graphics/Canvas,android/graphics/Paint,android/graphics/Bitmap,android/graphics/Color,android/graphics/Rect,android/graphics/RectF,android/graphics/Matrix,android/graphics/Path,android/graphics/PorterDuff"
 
 c_ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
 c_info() { printf '\033[1;33m→\033[0m %s\n' "$*"; }
@@ -151,10 +151,25 @@ PYEOF
   "$jdk/bin/javac" -nowarn -cp "$OUT/rw-launcher-cp.jar:$STUB_JAR:$tlib/*" \
     -d "$OUT/launcher" web/src/rwweb/Bootstrap.java || { c_warn "launcher 编译失败"; return 1; }
 
+  # TeaVM 0.14 在依赖分析阶段遇到 monitor-exit 会 NPE；Web 端单线程也不需要锁，
+  # 所以把 RW 字节码里的 monitor-enter/exit 全部换成 NOP。
+  local NOSYNC="$OUT/rw-nosync.jar"
+  if [ ! -f "$NOSYNC" ] || [ "$OUT/rw.jar" -nt "$NOSYNC" ]; then
+    c_info "去除 synchronized 监控器指令"
+    local asm_cp="$ROOT/tools/teavm-lib/asm-9.8.jar"
+    local tool_out="$ROOT/tools/java/out"
+    if [ ! -d "$tool_out" ]; then
+      mkdir -p "$tool_out"
+      "$jdk/bin/javac" -nowarn -cp "$asm_cp" -d "$tool_out" \
+        "$ROOT/tools/java/rwtool/StripMonitors.java" || { c_warn "strip 工具编译失败"; return 1; }
+    fi
+    "$jdk/bin/java" -cp "$tool_out:$asm_cp" rwtool.StripMonitors "$OUT/rw.jar" "$NOSYNC"
+  fi
+
   c_info "TeaVM AOT → JavaScript"
   rm -rf "$OUT/wasm"; mkdir -p "$OUT/wasm"
   # 注意：TeaVM 的 -p 只影响增量重载，被测类必须放在 JVM classpath 上
-  "$jdk/bin/java" -cp "$tlib/*:$OUT/rw.jar:$STUB_JAR:$OUT/launcher" \
+  "$jdk/bin/java" -cp "$tlib/*:$OUT/rw-nosync.jar:$STUB_JAR:$OUT/launcher" \
     org.teavm.cli.TeaVMRunner -t js -O1 \
     -d "$OUT/wasm" rwweb.Bootstrap 2>&1 | tee "$OUT/teavm.log" | grep -E 'INFO|ERROR' || true
 

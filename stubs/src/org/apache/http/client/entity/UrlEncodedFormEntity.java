@@ -3,4 +3,6 @@ package org.apache.http.client.entity;
 
 public class UrlEncodedFormEntity {
     public UrlEncodedFormEntity() { }
+    public UrlEncodedFormEntity(java.util.List p0) { }
+    public UrlEncodedFormEntity(java.util.List p0, java.lang.String p1) { }
 }

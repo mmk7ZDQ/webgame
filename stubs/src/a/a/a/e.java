@@ -5,4 +5,5 @@ public class e {
     public java.lang.String a() { return null; }
     public void a(int p0, int p1, int p2) {  }
     public e() { }
+    public e(int p0) { }
 }

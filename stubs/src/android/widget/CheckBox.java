@@ -11,4 +11,5 @@ public class CheckBox {
     public void setTextSize(int p0, float p1) {  }
     public void setVisibility(int p0) {  }
     public CheckBox() { }
+    public CheckBox(android.content.Context p0) { }
 }

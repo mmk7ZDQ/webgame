@@ -13,6 +13,7 @@ public class TableRow {
     public void setLayoutParams(android.view.ViewGroup.LayoutParams p0) {  }
     public void setOnClickListener(android.view.View.OnClickListener p0) {  }
     public TableRow() { }
+    public TableRow(android.content.Context p0) { }
 
     public static class LayoutParams {
         public int span;

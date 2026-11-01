@@ -9,4 +9,5 @@ public class Dialog {
     public void setTitle(java.lang.CharSequence p0) {  }
     public void show() {  }
     public Dialog() { }
+    public Dialog(android.content.Context p0) { }
 }

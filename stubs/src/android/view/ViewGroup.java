@@ -8,11 +8,14 @@ public class ViewGroup {
     public int getChildCount() { return 0; }
     public void removeView(View p0) {  }
     public ViewGroup() { }
+    public ViewGroup(android.content.Context p0, android.util.AttributeSet p1) { }
 
     public static class LayoutParams {
         public int height;
         public int width;
 
         public LayoutParams() { }
+        public LayoutParams(android.content.Context p0, android.util.AttributeSet p1) { }
+        public LayoutParams(int p0, int p1) { }
     }
 }

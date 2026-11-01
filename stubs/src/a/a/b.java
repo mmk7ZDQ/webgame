@@ -37,4 +37,6 @@ public class b {
     public boolean isClosed() { return false; }
     public void setSoTimeout(int p0) {  }
     public b() { }
+    public b(int p0) { }
+    public b(java.net.DatagramSocket p0) { }
 }

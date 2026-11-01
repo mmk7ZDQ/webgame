@@ -4,4 +4,5 @@ package android.database;
 public class MatrixCursor {
     public void addRow(java.lang.Object[] p0) {  }
     public MatrixCursor() { }
+    public MatrixCursor(java.lang.String[] p0, int p1) { }
 }

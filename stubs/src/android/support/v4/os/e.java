@@ -6,4 +6,5 @@ public class e {
 
     public void a(int p0, android.os.Bundle p1) {  }
     public e() { }
+    public e(ResultReceiver p0) { }
 }

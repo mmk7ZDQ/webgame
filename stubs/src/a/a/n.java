@@ -7,4 +7,5 @@ public class n {
     public void run() {  }
     public void setDaemon(boolean p0) {  }
     public n() { }
+    public n(h p0) { }
 }

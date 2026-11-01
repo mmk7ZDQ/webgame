@@ -82,7 +82,7 @@ def descriptor_to_type(desc, pkg=""):
 
 
 class C:
-    __slots__ = ("name", "methods", "fields", "iface", "parent")
+    __slots__ = ("name", "methods", "fields", "iface", "parent", "ctors")
 
     def __init__(self, name):
         self.name = name
@@ -90,6 +90,7 @@ class C:
         self.fields = {}      # name -> (type, static)
         self.iface = False
         self.parent = None
+        self.ctors = set()   # 构造器参数元组
 
 
 def scan(apk, prefixes):
@@ -136,7 +137,10 @@ def scan(apk, prefixes):
             for (cidx, nm, ret, params) in dex.methods:
                 c = cidx[1:-1] if cidx.startswith("L") else cidx
                 if reg(c) is not None:
-                    classes[c].methods.setdefault((nm, tuple(params)), ret)
+                    if nm == "<init>":
+                        classes[c].ctors.add(tuple(params))
+                    else:
+                        classes[c].methods.setdefault((nm, tuple(params)), ret)
             for (cidx, tidx, nm) in dex.fields:
                 c = cidx[1:-1] if cidx.startswith("L") else cidx
                 if reg(c) is not None:
@@ -293,8 +297,12 @@ def emit(cls, classes, kids, indent, nested):
             rt = descriptor_to_type(ret, pkg)
             body = DEFAULT.get(rt, "return null;")
             out.append(f"{pad}    public {'static ' if st else ''}{rt} {mn}({pt}) {{ {body} }}")
-        ctor = simple
-        out.append(f"{pad}    public {ctor}() {{ }}")
+        out.append(f"{pad}    public {simple}() {{ }}")
+        for ps in sorted(c.ctors, key=len):
+            if not ps:
+                continue
+            pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(ps))
+            out.append(f"{pad}    public {simple}({pt}) {{ }}")
 
     for k in sorted(kids.get(cls, [])):
         out.append("")

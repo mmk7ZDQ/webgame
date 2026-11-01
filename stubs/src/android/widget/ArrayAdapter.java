@@ -6,4 +6,7 @@ public class ArrayAdapter {
     public java.lang.Object getItem(int p0) { return null; }
     public void setDropDownViewResource(int p0) {  }
     public ArrayAdapter() { }
+    public ArrayAdapter(android.content.Context p0, int p1) { }
+    public ArrayAdapter(android.content.Context p0, int p1, java.lang.Object[] p2) { }
+    public ArrayAdapter(android.content.Context p0, int p1, java.util.List p2) { }
 }

@@ -14,5 +14,6 @@ public class Notification {
         public Notification.Builder setOngoing(boolean p0) { return null; }
         public Notification.Builder setSmallIcon(int p0) { return null; }
         public Builder() { }
+        public Builder(android.content.Context p0) { }
     }
 }

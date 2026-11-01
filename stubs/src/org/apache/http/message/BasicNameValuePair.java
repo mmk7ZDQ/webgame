@@ -3,4 +3,5 @@ package org.apache.http.message;
 
 public class BasicNameValuePair {
     public BasicNameValuePair() { }
+    public BasicNameValuePair(java.lang.String p0, java.lang.String p1) { }
 }

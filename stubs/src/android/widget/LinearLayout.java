@@ -15,6 +15,7 @@ public class LinearLayout {
     public void setTag(java.lang.Object p0) {  }
     public void setVisibility(int p0) {  }
     public LinearLayout() { }
+    public LinearLayout(android.content.Context p0) { }
 
     public static class LayoutParams {
         public int gravity;
@@ -23,5 +24,6 @@ public class LinearLayout {
 
         public void setMargins(int p0, int p1, int p2, int p3) {  }
         public LayoutParams() { }
+        public LayoutParams(android.view.ViewGroup.LayoutParams p0) { }
     }
 }

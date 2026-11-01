@@ -12,5 +12,6 @@ public class Gallery {
 
     public static class LayoutParams {
         public LayoutParams() { }
+        public LayoutParams(int p0, int p1) { }
     }
 }

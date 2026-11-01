@@ -6,4 +6,5 @@ public class i {
 
     public void run() {  }
     public i() { }
+    public i(h p0) { }
 }

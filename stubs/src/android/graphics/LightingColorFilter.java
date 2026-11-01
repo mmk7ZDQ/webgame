@@ -3,4 +3,5 @@ package android.graphics;
 
 public class LightingColorFilter {
     public LightingColorFilter() { }
+    public LightingColorFilter(int p0, int p1) { }
 }

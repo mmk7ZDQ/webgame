@@ -8,4 +8,5 @@ public class d {
     public void setDaemon(boolean p0) {  }
     public void start() {  }
     public d() { }
+    public d(b p0) { }
 }

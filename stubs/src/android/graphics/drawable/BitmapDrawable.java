@@ -4,4 +4,5 @@ package android.graphics.drawable;
 public class BitmapDrawable {
     public android.graphics.Bitmap getBitmap() { return null; }
     public BitmapDrawable() { }
+    public BitmapDrawable(android.content.res.Resources p0, android.graphics.Bitmap p1) { }
 }

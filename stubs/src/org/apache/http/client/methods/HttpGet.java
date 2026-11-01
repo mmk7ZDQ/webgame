@@ -3,4 +3,5 @@ package org.apache.http.client.methods;
 
 public class HttpGet {
     public HttpGet() { }
+    public HttpGet(java.lang.String p0) { }
 }

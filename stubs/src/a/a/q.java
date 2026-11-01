@@ -12,4 +12,5 @@ public class q {
     public void write(byte[] p0) {  }
     public void write(byte[] p0, int p1, int p2) {  }
     public q() { }
+    public q(h p0) { }
 }

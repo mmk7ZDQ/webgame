@@ -6,4 +6,6 @@ public class SurfaceView {
     public void onDetachedFromWindow() {  }
     public void onSizeChanged(int p0, int p1, int p2, int p3) {  }
     public SurfaceView() { }
+    public SurfaceView(android.content.Context p0) { }
+    public SurfaceView(android.content.Context p0, android.util.AttributeSet p1) { }
 }

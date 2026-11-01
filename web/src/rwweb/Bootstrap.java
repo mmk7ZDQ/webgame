@@ -133,6 +133,11 @@ public class Bootstrap {
             step("37 FAILED rwRealMap: " + e);
         }
 
+        // ---- 游戏引擎（gameFramework/k 的 Android 实现）----
+        // 需要先补齐 java.util.concurrent.* / System.exit / ServerSocket 等缺失类，
+        // 详见 AGENTS.md「通向真游戏」。在补齐之前保持断开：TeaVM 是静态可达性分析，
+        // 只要引用到 game.i，整个引擎依赖树都会进来，缺一个类就编译不过。
+
         // ---- 相机 + rAF 主循环 ----
         try {
             setupCamera();
@@ -853,6 +858,17 @@ public class Bootstrap {
         if (camX > mw) camX = mw;
         if (camY > mh) camY = mh;
     }
+
+    /*
+     * 游戏引擎入口（暂未启用）
+     *
+     *   android.content.Context ctx = new android.content.Context();
+     *   com.corrodinggames.rts.game.i engine = new com.corrodinggames.rts.game.i(ctx);
+     *   engine.a(ctx);          // k.a(Context) 初始化
+     *
+     * 前提：补齐 69 个缺失符号（见 AGENTS.md）。其中 java.util.concurrent.*
+     * 与 System/Runtime 的若干方法需要扩展 TeaVM 的 classlib，不是改桩能解决的。
+     */
 
     /** 引用类字面量，迫使 TeaVM 编译该类及其可达方法 */
     private static void touch(Class<?> c) {

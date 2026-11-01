@@ -21,4 +21,6 @@ public class Button {
     public void setTypeface(android.graphics.Typeface p0) {  }
     public void setVisibility(int p0) {  }
     public Button() { }
+    public Button(android.content.Context p0) { }
+    public Button(android.content.Context p0, android.util.AttributeSet p1, int p2) { }
 }

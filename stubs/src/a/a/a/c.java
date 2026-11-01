@@ -11,4 +11,5 @@ public class c {
     public byte[] c() { return null; }
     public int d() { return 0; }
     public c() { }
+    public c(int p0, int p1, int[] p2) { }
 }

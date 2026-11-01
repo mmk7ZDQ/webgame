@@ -8,4 +8,6 @@ public class f {
     public void b(h p0) {  }
     public void c(h p0) {  }
     public f() { }
+    public f(b p0) { }
+    public f(b p0, byte p1) { }
 }

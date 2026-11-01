@@ -23,4 +23,5 @@ public class i {
     public boolean f() { return false; }
     public void run() {  }
     public i() { }
+    public i(java.lang.String p0, java.lang.Runnable p1) { }
 }

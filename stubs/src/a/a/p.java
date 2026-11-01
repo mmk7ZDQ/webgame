@@ -15,4 +15,5 @@ public class p {
     public int read(byte[] p0) { return 0; }
     public int read(byte[] p0, int p1, int p2) { return 0; }
     public p() { }
+    public p(h p0) { }
 }

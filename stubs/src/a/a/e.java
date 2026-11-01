@@ -19,4 +19,5 @@ public class e {
     public java.net.SocketAddress c() { return null; }
     public int getPort() { return 0; }
     public e() { }
+    public e(b p0, java.net.DatagramSocket p1, java.net.SocketAddress p2) { }
 }

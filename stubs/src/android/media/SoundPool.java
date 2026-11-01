@@ -6,4 +6,5 @@ public class SoundPool {
     public int load(java.io.FileDescriptor p0, long p1, long p2, int p3) { return 0; }
     public int play(int p0, float p1, float p2, int p3, int p4, float p5) { return 0; }
     public SoundPool() { }
+    public SoundPool(int p0, int p1, int p2) { }
 }

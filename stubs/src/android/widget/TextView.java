@@ -20,4 +20,5 @@ public class TextView {
     public void setTypeface(android.graphics.Typeface p0, int p1) {  }
     public void setVisibility(int p0) {  }
     public TextView() { }
+    public TextView(android.content.Context p0) { }
 }

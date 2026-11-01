@@ -79,6 +79,7 @@ RW 图像链路        Bitmap → m/e → m/h → Canvas.drawBitmap 实测通过
 真实关卡渲染       关卡 1「Dividing River」三层（地形+装饰+单位）16875 tile / 220ms ✅
 相机 + 主循环      rAF 驱动、拖拽平移、滚轮缩放，1:1 像素视口 481 类 / 1.1 MB ✅
 单位实体          64 个单位实体化（车体 + 炮塔分层，随相机缩放平移）✅
+游戏引擎          已能进入 TeaVM 分析；卡在 69 个缺失符号（见第 8 节）⚠️
 资源 eager 首屏    0.8 MB（总计 20.7 MB，其余懒加载）
 全链路重建         16.7 秒（build.sh all，从零）
 ```
@@ -253,6 +254,37 @@ python3 tools/dex-flow.py app.apk --entry GameViewOpenGL.onDrawFrame
 - [x] **相机 + rAF 主循环**：拖拽平移 / 滚轮缩放 / FPS 显示，1:1 像素视口
 - [x] **单位实体化**：64 个单位，车体 + 炮塔分层，跟随相机
 
+### 通向真游戏：引擎初始化（进行中）
+
+`gameFramework/k` 是抽象类，真机实现是 `game.i`，由平台适配器 `gameFramework/af` 创建
+（`af` 在 `k.<clinit>` 里被赋给静态字段 `dv`，所以不需要我们注册）。入口就是：
+
+```java
+android.content.Context ctx = new android.content.Context();   // impl 已提供
+com.corrodinggames.rts.game.i engine = new com.corrodinggames.rts.game.i(ctx);
+engine.a(ctx);                                                  // k.a(Context)
+```
+
+**已扫清的两个障碍**
+
+1. **TeaVM 0.14 遇到 `monitor-enter/exit` 会在依赖分析阶段 NPE**，整个 AOT 编译直接失败。
+   RW 的字节码里有 **1,100 条** monitor 指令。Web 端是单线程（rAF 驱动），锁本来无意义 ——
+   `tools/java/rwtool/StripMonitors.java` 用 ASM 把它们全换成 NOP，`build.sh` 的 wasm
+   步骤会自动生成 `build/rw-nosync.jar` 并优先使用。
+2. **桩类只有无参构造**，导致 `new PointF(x, y)` 这类调用全部缺符号。
+   `gen-stubs.py` 现在会从 method_ids 里收集所有 `<init>` 签名并逐个生成构造器重载。
+
+**当前卡点：69 个缺失符号**，分三类：
+
+| 类别 | 例子 | 难度 |
+|---|---|---|
+| `java.util.concurrent.*`（TeaVM classlib 未实现） | `ConcurrentLinkedQueue`、`ReentrantLock`、`Executors`、`Future`、`LinkedBlockingQueue` | **高**——需要扩展 classlib，不能靠改桩 |
+| `java.*` 的个别方法 | `System.exit`、`Runtime.halt/maxMemory`、`Thread.getState`、`PrintWriter(File)` | **高**——同上，java.* 不能自己定义 |
+| 我们自己的实现/桩缺失 | `Canvas.rotate(FFF)`、`Canvas.scale(FFFF)`、`RectF.intersects`、`Paint.setXfermode`、`SoundPool(int,int,int)` | 低，直接补 |
+
+> 注意：TeaVM 是**静态可达性**分析，只要在源码里引用 `game.i`（哪怕包在 `if` 里），
+> 整个引擎依赖树都会被拉进来。所以补齐之前，`Bootstrap` 里对引擎的引用是断开的。
+
 ### 未开始
 - [ ] **让 `b/t` 真正画出几何体（卡在这）** —— 当前状态与已排除项：
 
@@ -371,3 +403,4 @@ python3 tools/dex-flow.py app.apk --entry GameViewOpenGL.onDrawFrame
 | 2026-11-01 | 第十五轮：**真实关卡渲染成功**。`tools/tmx2json.py`（支持外部 .tsx、base64+gzip 解压）；关卡 1 地形+装饰+单位三层共 16875 tile / 220ms（`docs/m1-full-map.png`）；踩了三个时序/类型坑：`window.load` 里的异步不进入截图、JS 的 `undefined` ≠ Java `null`、fetch 不计入 load 事件 |
 | 2026-11-01 | 第十六轮：**相机 + 主循环**。`requestAnimationFrame` 驱动，离屏地图裁剪到视口，拖拽平移 + 滚轮缩放 + FPS（`docs/m1-camera.png`）；站点整理为 `demo/`（预编译产物入库，Pages 免构建）；完成首次 git 提交 |
 | 2026-11-01 | 第十七轮：**单位实体化**。从 Units 层提取 64 个坐标，用真实 `tank.png` + `tank_turret.png` 分层绘制（车体固定、炮塔独立旋转，`tank.ini` 的 imageScale 0.8）；单位随相机平移缩放（`docs/m1-units.png`）|
+| 2026-11-01 | 第十八轮：**扫清引擎初始化的两个硬障碍**。① TeaVM 遇 monitor 指令 NPE → 写 ASM 工具把 1,100 条 monitor 换成 NOP（`build/rw-nosync.jar`），分析阶段从崩溃变为 13.8 秒通过；② gen-stubs 生成全部构造器重载；③ 手写 `android.content.Context` / `SharedPreferences`。当前卡在 69 个缺失符号 |

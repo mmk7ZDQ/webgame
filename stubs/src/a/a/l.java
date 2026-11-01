@@ -6,4 +6,6 @@ public class l {
 
     public void run() {  }
     public l() { }
+    public l(h p0) { }
+    public l(h p0, byte p1) { }
 }

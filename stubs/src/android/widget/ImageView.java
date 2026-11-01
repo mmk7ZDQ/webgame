@@ -15,6 +15,8 @@ public class ImageView {
     public void setScaleType(ImageView.ScaleType p0) {  }
     public void setVisibility(int p0) {  }
     public ImageView() { }
+    public ImageView(android.content.Context p0) { }
+    public ImageView(android.content.Context p0, android.util.AttributeSet p1) { }
 
     public static class ScaleType {
         public static ImageView.ScaleType FIT_CENTER;
