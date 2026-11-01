@@ -30,6 +30,7 @@
 - 真实贴图 `units/tanks/tank.png`
 - **真实关卡「Dividing River」三层叠加，16,875 tile / 220ms**
 - `GLES20` 编译 GLSL 着色器并绘制三角形
+- **相机与主循环**：`requestAnimationFrame` 驱动，可拖拽平移、滚轮缩放
 
 ```bash
 python3 -m http.server 8098   # 然后打开 http://127.0.0.1:8098/

@@ -28,6 +28,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import org.teavm.jso.dom.html.HTMLCanvasElement;
 
 public class Bootstrap {
 
@@ -130,6 +131,13 @@ public class Bootstrap {
             rwRealMap();
         } catch (Throwable e) {
             step("37 FAILED rwRealMap: " + e);
+        }
+
+        // ---- 相机 + rAF 主循环 ----
+        try {
+            setupCamera();
+        } catch (Throwable e) {
+            step("41 FAILED camera: " + e);
         }
 
         // 挂到页面，便于用截图确认真的画出来了
@@ -616,13 +624,153 @@ public class Bootstrap {
         // 挂到页面（缩放显示，完整地图 2700x2500 太大）
         org.teavm.jso.dom.html.HTMLCanvasElement out = off.getElement();
         if (out != null) {
-            out.setAttribute("style", "max-width:100%;height:auto;border:1px solid #30363d");
+            out.setAttribute("id", "mapOffscreen");
+            out.setAttribute("style", "display:none");
             org.teavm.jso.dom.html.HTMLDocument doc =
                     (org.teavm.jso.dom.html.HTMLDocument)
                             org.teavm.jso.browser.Window.current().getDocument();
             if (doc != null && doc.getBody() != null) doc.getBody().appendChild(out);
         }
         step("40 map ready");
+    }
+
+    // ================================================================ 相机
+
+    private static HTMLCanvasElement viewEl;
+    private static Canvas viewCanvas;
+    private static Bitmap mapBmp;
+    private static Bitmap viewBmp;
+    private static com.corrodinggames.rts.gameFramework.m.h viewR;
+
+    private static double camX = 1150, camY = 1250;   // 地图坐标（像素）
+    private static double camZoom = 1.0;
+    private static boolean dragging;
+    private static int lastX, lastY;
+    private static int frameCount;
+    private static long lastFpsAt;
+    private static int fps;
+
+    @org.teavm.jso.JSBody(script = "return document.getElementById('viewport');")
+    private static native HTMLCanvasElement viewportEl();
+
+    @org.teavm.jso.JSBody(params = {"id"}, script =
+            "var e=document.getElementById('fps'); if(e) e.textContent=id;")
+    private static native void setFpsText(String text);
+
+    @org.teavm.jso.JSBody(params = {"id"}, script =
+            "var e=document.getElementById('cam'); if(e) e.textContent=id;")
+    private static native void setCamText(String text);
+
+    /**
+     * 相机 + 主循环。
+     * 离屏地图只画一次（rwRealMap 里预渲染），这里每帧只从它裁剪一块贴到视口。
+     * 对应真机上 ak.run() 的 tick+render 循环，Web 端换成 requestAnimationFrame 驱动。
+     */
+    private static void setupCamera() {
+        viewEl = viewportEl();
+        if (viewEl == null) { step("41 SKIP: 没有 viewport 画布"); return; }
+        viewBmp = Bitmap.fromElement(viewEl);
+        viewCanvas = new Canvas(viewBmp);
+
+        HTMLCanvasElement mapEl = mapOffscreenEl();
+        if (mapEl == null) { step("41 SKIP: 没有离屏地图"); return; }
+        mapBmp = Bitmap.fromElement(mapEl);
+
+        step("41 camera ready, map=" + mapBmp.getWidth() + "x" + mapBmp.getHeight()
+                + " view=" + viewEl.getWidth() + "x" + viewEl.getHeight());
+
+        // 拖拽平移
+        org.teavm.jso.dom.events.EventListener down = e -> {
+            org.teavm.jso.dom.events.MouseEvent me = (org.teavm.jso.dom.events.MouseEvent) e;
+            dragging = true; lastX = me.getClientX(); lastY = me.getClientY();
+            me.preventDefault();
+        };
+        org.teavm.jso.dom.events.EventListener move = e -> {
+            if (!dragging) return;
+            org.teavm.jso.dom.events.MouseEvent me = (org.teavm.jso.dom.events.MouseEvent) e;
+            camX -= (me.getClientX() - lastX) / camZoom;
+            camY -= (me.getClientY() - lastY) / camZoom;
+            lastX = me.getClientX(); lastY = me.getClientY();
+            clampCam();
+        };
+        org.teavm.jso.dom.events.EventListener up = e -> dragging = false;
+
+        viewEl.addEventListener("mousedown", down);
+        viewEl.addEventListener("mousemove", move);
+        viewEl.addEventListener("mouseup", up);
+        viewEl.addEventListener("mouseleave", up);
+
+        // 滚轮缩放
+        viewEl.addEventListener("wheel", e -> {
+            org.teavm.jso.dom.events.WheelEvent we = (org.teavm.jso.dom.events.WheelEvent) e;
+            double f = we.getDeltaY() > 0 ? 0.9 : 1.1;
+            camZoom = Math.max(0.25, Math.min(4.0, camZoom * f));
+            we.preventDefault();
+        });
+
+        lastFpsAt = System.currentTimeMillis();
+        // 先画一帧并刷新 HUD，避免首屏空白
+        renderFrame();
+        setFpsText("…");
+        setCamText((int) camX + ", " + (int) camY + "  ×" + String.format("%.2f", camZoom));
+        scheduleFrame();
+        step("42 main loop started (rAF)");
+    }
+
+    @org.teavm.jso.JSBody(script = "return document.getElementById('mapOffscreen');")
+    private static native HTMLCanvasElement mapOffscreenEl();
+
+    private static void scheduleFrame() {
+        org.teavm.jso.browser.Window.current().requestAnimationFrame(t -> {
+            try {
+                renderFrame();
+            } catch (Throwable e) {
+                // 帧内异常不终止循环
+            }
+            scheduleFrame();
+        });
+    }
+
+    private static void renderFrame() {
+        if (mapBmp == null || viewEl == null) return;
+        int vw = viewEl.getWidth(), vh = viewEl.getHeight();
+
+        int sw = (int) (vw / camZoom);
+        int sh = (int) (vh / camZoom);
+        int sx = (int) camX - sw / 2;
+        int sy = (int) camY - sh / 2;
+
+        int mw = mapBmp.getWidth(), mh = mapBmp.getHeight();
+        if (sx < 0) sx = 0;
+        if (sy < 0) sy = 0;
+        if (sx + sw > mw) sx = mw - sw;
+        if (sy + sh > mh) sy = mh - sh;
+        if (sx < 0) sx = 0;
+        if (sy < 0) sy = 0;
+
+        Paint p = new Paint();
+        viewCanvas.drawColor(Color.BLACK);
+        android.graphics.Rect src = new android.graphics.Rect(sx, sy, sx + sw, sy + sh);
+        android.graphics.Rect dst = new android.graphics.Rect(0, 0, vw, vh);
+        viewCanvas.drawBitmap(mapBmp, src, dst, p);
+
+        frameCount++;
+        long now = System.currentTimeMillis();
+        if (now - lastFpsAt >= 500) {
+            fps = (int) (frameCount * 1000.0 / (now - lastFpsAt));
+            frameCount = 0;
+            lastFpsAt = now;
+            setFpsText(fps + " fps");
+            setCamText((int) camX + ", " + (int) camY + "  ×" + String.format("%.2f", camZoom));
+        }
+    }
+
+    private static void clampCam() {
+        int mw = mapBmp.getWidth(), mh = mapBmp.getHeight();
+        if (camX < 0) camX = 0;
+        if (camY < 0) camY = 0;
+        if (camX > mw) camX = mw;
+        if (camY > mh) camY = mh;
     }
 
     /** 引用类字面量，迫使 TeaVM 编译该类及其可达方法 */

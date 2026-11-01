@@ -31,6 +31,13 @@
 <img id="tile11" src="maps/tiles/water.png" style="display:none" alt="">
 <canvas id="tankCanvas" style="display:none"></canvas>
 <canvas id="host"></canvas>
+<div id="hud" style="display:flex;gap:18px;font:12px ui-monospace,monospace;color:#8b949e;margin:6px 0">
+  <span id="fps">—</span>
+  <span id="cam">—</span>
+  <span style="color:#484f58">拖动平移 · 滚轮缩放</span>
+</div>
+<canvas id="viewport" width="960" height="540"
+        style="border:1px solid #30363d;cursor:grab;max-width:100%;image-rendering:pixelated"></canvas>
 <div id="log"></div>
 <script src="maps/l010__demo_mission_1__-__Dividing_River.js"></script>
 <script src="map-loader.js"></script>
