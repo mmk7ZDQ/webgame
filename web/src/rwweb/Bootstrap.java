@@ -939,6 +939,18 @@ public class Bootstrap {
                         + " h=" + (root == null ? "?" : root.getAttribute("height")));
                 rwutil.Xml.NodeList ts = root == null ? null : root.getElementsByTagName("tileset");
                 step("51 tilesets=" + (ts == null ? -1 : ts.getLength()));
+
+                // 让引擎自己的 TMX 解析器跑一遍（game.b.l）
+                try {
+                    step("52 new game.b.b()");
+                    com.corrodinggames.rts.game.b.b mapObj = new com.corrodinggames.rts.game.b.b();
+                    step("53 new game.b.l(map, tmx, 0)");
+                    com.corrodinggames.rts.game.b.l layer =
+                            new com.corrodinggames.rts.game.b.l(mapObj, mapName, 0);
+                    step("54 engine map parsed: " + layer);
+                } catch (Throwable e) {
+                    step("54 engine map FAILED: " + e);
+                }
             }
         } catch (Throwable e) {
             step("49 asset FAILED: " + e);
