@@ -443,9 +443,13 @@ main 返回，耗时 424ms        → 约 85ms/帧
    它的构造里调 `a(String)`，而那个方法固定拼 `tilesets/` 前缀 ——
    传地图路径会得到 `Unable to load or parse sourced tileset: tilesets/maps/normal/...tmx`。
 
-真正的关卡加载是 `k.a(Activity, ab)`（`ab` 是游戏视图接口，有 `drawCompleted`/
-`getRenderer`/`flushCanvas` 等 11 个方法）。要调它得先造一个 `ab` 实现 + Activity，
-属于 UI 层，成本明显更高。
+**`k.a(Activity, ab)` 也不是关卡加载入口** —— 实测它只调 `d(Z)` + `ab.onParentStop()`，
+是暂停/停止。已在 Bootstrap 里写了 `AbStub`（`appFramework.ab` 的 25 个方法空实现），
+调用不抛异常但也什么都没发生。
+
+**`game.b` 是个 62 个类的子系统**（`game/b/*`），包含 TMX 解析、tileset 管理、
+位图加载（走 `m.e` / `m.fi`）。要让它跑起来不是「补几个桩」，而是让这整套东西
+在 Web 端工作 —— 包括位图的同步解码（我们的 `BitmapFactory` 目前返回 1x1 占位）。
 
 **现状**：资源能读（25443 字节）、XML 能解析（map 135x125、32 个 tileset）、
 引擎初始化与 tick 能跑 —— 但「引擎自己把那 32 个 tileset 加载成世界」这一步没打通。
@@ -607,3 +611,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十六轮：**资源管线打通**。`tools/pack-assets-js.py` 从 TMX 递归解析引用的 tsx/png，base64 打包成 `window.__RW_ASSETS`；`AssetManager` 改为从它读取（base64 → byte[]）。实测引擎读回关卡 1 的 TMX 25443 字节，与真实文件一致。踩坑：TMX 里的 `source=` 路径基准是 `assets/tilesets/` 而非地图目录 |
 | 2026-11-02 | 第二十七轮：**Xml 桥接 DOMParser + 全链路验证**。`rwutil.Xml` 改为代理真实 DOM，TMX 解析出 `root=map w=135 h=125`、遍历出 32 个 tileset。编译规模 481 → **1,896 类 / 16,890 方法**（真实值）。修 `build-engine.sh` 的 `set -e` 假失败与 rwutil 编译缺 TeaVM classpath |
 | 2026-11-02 | 第二十八轮：**`game.b` 类/包同名冲突修复 + 地图加载入口调研**。`com/corrodinggames/rts/game/b.class` 与 `game/b/` 包冲突，加入 `LAUNCHER_STRIP`；摸清 `game.b.l` 的 String 参数是 tileset 路径而非地图路径，真正的关卡加载在 `k.a(Activity, ab)`（需要造 `ab` 游戏视图实现）。站点已上线 GitHub Pages |
+| 2026-11-02 | 第二十九轮：**`ab` 接口实现 + 关卡入口再排查**。写了 `AbStub`（`appFramework.ab` 的 25 个方法空实现），`engine.a(activity, view)` 调用不抛异常但也没加载任何东西；反查确认 `k.a(Activity, ab)` 只是暂停/停止。`game.b` 是 62 个类的子系统（TMX 解析 + tileset + 位图加载），是「引擎加载地图」真正要跨过的门槛 |

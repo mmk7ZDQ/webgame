@@ -919,6 +919,19 @@ public class Bootstrap {
         }
         step("48 ticks done");
 
+        // 关卡加载入口：k.a(Activity, ab)
+        try {
+            step("55 new android.app.Activity()");
+            android.app.Activity act = new android.app.Activity();
+            step("56 new AbStub()");
+            AbStub view = new AbStub();
+            step("57 engine.a(activity, view)");
+            engine.a(act, view);
+            step("58 level load returned");
+        } catch (Throwable e) {
+            step("58 level load FAILED: " + e);
+        }
+
         // 资源管线验证：从预打包的 JS 对象读地图
         try {
             String mapName = "maps/normal/l010;[demo]mission_1__-__Dividing_River.tmx";
@@ -955,6 +968,41 @@ public class Bootstrap {
         } catch (Throwable e) {
             step("49 asset FAILED: " + e);
         }
+    }
+
+    /**
+     * appFramework.ab 的最小实现 —— 游戏视图接口。
+     *
+     * k.a(Activity, ab) 是真正的关卡加载入口，它需要这个接口。
+     * Web 端没有 Surface / 独立渲染线程，所以所有回调都退化成 no-op，
+     * 只为让加载流程能走进去。
+     */
+    static final class AbStub implements com.corrodinggames.rts.appFramework.ab {
+        private com.corrodinggames.rts.appFramework.InGameActivity activity;
+
+        public void drawCompleted(float a, int b) { }
+        public void drawStarting(float a, int b) { }
+        public void flushCanvas() { }
+        public void forceSurfaceUnlockWorkaround() { }
+        public com.corrodinggames.rts.appFramework.ep getCurrTouchPoint() { return null; }
+        public boolean getDirectSurfaceRendering() { return false; }
+        public Object getGameThreadSync() { return this; }
+        public com.corrodinggames.rts.appFramework.InGameActivity getInGameActivity() { return activity; }
+        public com.corrodinggames.rts.gameFramework.m.l getNewCanvasLock(boolean b) { return null; }
+        public com.corrodinggames.rts.gameFramework.m.a getRenderer() { return null; }
+        public boolean getSurfaceExists() { return false; }
+        public boolean isFullscreen() { return false; }
+        public boolean isPaused() { return false; }
+        public void onParentPause() { }
+        public void onParentResume() { }
+        public void onParentStart() { }
+        public void onParentStop() { }
+        public void onParentWindowFocusChanged(boolean b) { }
+        public void onReplacedByAnotherView() { }
+        public void setInGameActivity(com.corrodinggames.rts.appFramework.InGameActivity a) { this.activity = a; }
+        public void unlockAndReturnCanvas(com.corrodinggames.rts.gameFramework.m.l l, boolean b) { }
+        public void updateResolution() { }
+        public boolean usingBasicDraw() { return true; }
     }
 
     /** 引用类字面量，迫使 TeaVM 编译该类及其可达方法 */
