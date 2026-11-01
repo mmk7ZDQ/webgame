@@ -2,9 +2,19 @@
 package android.os;
 
 public class Build {
-    public static java.lang.String MODEL;
+    public static java.lang.String MODEL = "Web";
 
     public Build() { }
+    public java.lang.String MANUFACTURER = "Browser";
+    public java.lang.String BRAND = "generic";
+    public java.lang.String DEVICE = "web";
+    public java.lang.String PRODUCT = "rw-web";
+    public java.lang.String HARDWARE = "browser";
+    public java.lang.String FINGERPRINT = "rw-web/browser";
+    public java.lang.String ID = "RW15";
+    public java.lang.String TAGS = "release-keys";
+    public java.lang.String TYPE = "user";
+    public java.lang.String DISPLAY = "1.15-web";
 
     public static class VERSION {
         public static java.lang.String RELEASE;

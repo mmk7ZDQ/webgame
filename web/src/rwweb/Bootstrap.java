@@ -133,7 +133,8 @@ public class Bootstrap {
             step("37 FAILED rwRealMap: " + e);
         }
 
-        try { rwGameEngine(); } catch (Throwable e) { step("43 FAILED engine: " + e); }
+        // 故意不 catch：让异常冒到 JS 层，用 window.onerror 拿 JS 堆栈（含行号）
+        rwGameEngine();
 
         // ---- 相机 + rAF 主循环 ----
         try {
@@ -857,6 +858,12 @@ public class Bootstrap {
     }
 
     private static void rwGameEngine() {
+        // 强制把引擎会 catch 的异常类型拉进可达图（TeaVM 静态分析不会为未引用的类生成 JS）
+        try {
+            rwutil.Xml.parserConfigException();
+        } catch (Throwable ignored) {
+        }
+
         step("43 new android.content.Context");
         android.content.Context ctx = new android.content.Context();
         step("44 new game.i (GameEngine)");

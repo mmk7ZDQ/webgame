@@ -32,6 +32,12 @@ public class PackageManager {
         return null;
     }
 
+    /** Android 里是 PackageManager.NameNotFoundException */
+    public static class NameNotFoundException extends Exception {
+        public NameNotFoundException() { super(); }
+        public NameNotFoundException(String m) { super(m); }
+    }
+
     public static final int PERMISSION_GRANTED = 0;
     public static final int PERMISSION_DENIED = -1;
     public static final int GET_META_DATA = 128;

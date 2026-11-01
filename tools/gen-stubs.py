@@ -72,6 +72,19 @@ EXTRA_METHODS = {
 
 # 桩类需要补的字段（真机上由 Android 框架提供）
 EXTRA_FIELDS = {
+    "android/os/Build": [
+        ("MODEL", "java.lang.String", "\"Web\""),
+        ("MANUFACTURER", "java.lang.String", "\"Browser\""),
+        ("BRAND", "java.lang.String", "\"generic\""),
+        ("DEVICE", "java.lang.String", "\"web\""),
+        ("PRODUCT", "java.lang.String", "\"rw-web\""),
+        ("HARDWARE", "java.lang.String", "\"browser\""),
+        ("FINGERPRINT", "java.lang.String", "\"rw-web/browser\""),
+        ("ID", "java.lang.String", "\"RW15\""),
+        ("TAGS", "java.lang.String", "\"release-keys\""),
+        ("TYPE", "java.lang.String", "\"user\""),
+        ("DISPLAY", "java.lang.String", "\"1.15-web\""),
+    ],
     "android/content/pm/PackageInfo": [
         ("packageName", "java.lang.String", "\"com.corrodinggames.rts\""),
         ("versionName", "java.lang.String", "\"1.15\""),
@@ -325,6 +338,7 @@ def emit(cls, classes, kids, indent, nested):
         pn = RENAME.get(c.parent, c.parent)
         head += " extends " + pn.replace("/", ".").replace("$", ".")
     out = [head + " {"]
+    extra = {fn: (ft, fv) for (fn, ft, fv) in EXTRA_FIELDS.get(cls, [])}
 
     if c.fields:
         for fn, (ft, st) in sorted(c.fields.items()):
@@ -334,7 +348,10 @@ def emit(cls, classes, kids, indent, nested):
                 init = DEFAULT.get(jt, "null").replace("return ", "").rstrip(";") or "null"
                 out.append(f"{pad}    {jt} {fn} = {init};")
             else:
-                out.append(f"{pad}    public {'static ' if st else ''}{jt} {fn};")
+                # 若该字段在 EXTRA_FIELDS 里给了初值，直接带上（Build.MODEL 这类必须非 null）
+                ev = extra.get(fn)
+                init = f" = {ev[1]}" if ev else ""
+                out.append(f"{pad}    public {'static ' if st else ''}{jt} {fn}{init};")
         out.append("")
 
     if c.iface:
@@ -358,8 +375,7 @@ def emit(cls, classes, kids, indent, nested):
             pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(ps))
             out.append(f"{pad}    public {simple}({pt}) {{ }}")
 
-    for (fn, ft, fv) in EXTRA_FIELDS.get(cls, []):
-        out.append(f"{pad}    public {ft} {fn} = {fv};")
+    extra = {fn: (ft, fv) for (fn, ft, fv) in EXTRA_FIELDS.get(cls, [])}
 
     existing = {mk[0] for mk in c.methods}
     for (mn, desc, rt, body) in EXTRA_METHODS.get(cls, []):
@@ -368,6 +384,10 @@ def emit(cls, classes, kids, indent, nested):
         params = desc[1:desc.index(')')]
         pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(split_params(params)))
         out.append(f"{pad}    public {rt} {mn}({pt}) {{ {body} }}")
+
+    for (fn, (ft, fv)) in extra.items():
+        if fn not in c.fields:
+            out.append(f"{pad}    public {ft} {fn} = {fv};")
 
     for k in sorted(kids.get(cls, [])):
         out.append("")

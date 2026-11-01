@@ -72,6 +72,55 @@ public final class PatchGetClass {
                                     boolean isEquals = mname.equals("equals")
                                             && mdesc.equals("(Ljava/lang/Object;)Z");
 
+                                    // TeaVM classlib 缺的方法：在调用点直接替换成常量
+                                    // （栈上先弹出接收者，再压入常量）
+                                    if (owner.equals("java/util/Locale") && mname.equals("getISO3Language")) {
+                                        mv.visitInsn(Opcodes.POP);
+                                        mv.visitLdcInsn("und");
+                                        patched[0]++;
+                                        return;
+                                    }
+                                    if (owner.equals("java/util/Locale") && mname.equals("getISO3Country")) {
+                                        mv.visitInsn(Opcodes.POP);
+                                        mv.visitLdcInsn("UND");
+                                        patched[0]++;
+                                        return;
+                                    }
+                                    // ResourceBundle.getString(key) 没资源包会抛 MissingResourceException。
+                                    // 栈上是 [bundle, key]，swap 后弹掉 bundle，保留 key —— 退化成返回 key 本身。
+                                    if (owner.equals("java/util/ResourceBundle") && mname.equals("getString")
+                                            && mdesc.equals("(Ljava/lang/String;)Ljava/lang/String;")) {
+                                        mv.visitInsn(Opcodes.SWAP);
+                                        mv.visitInsn(Opcodes.POP);
+                                        patched[0]++;
+                                        return;
+                                    }
+                                    // Thread.getState() / ConcurrentHashMap.keys() 同样缺失
+                                    if (owner.equals("java/lang/Thread") && mname.equals("getState")) {
+                                        mv.visitInsn(Opcodes.POP);
+                                        mv.visitInsn(Opcodes.ACONST_NULL);
+                                        patched[0]++;
+                                        return;
+                                    }
+                                    if (owner.equals("java/util/concurrent/ConcurrentHashMap")
+                                            && mname.equals("keys")) {
+                                        mv.visitInsn(Opcodes.POP);
+                                        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                                "java/util/Collections", "emptyEnumeration",
+                                                "()Ljava/util/Enumeration;", false);
+                                        patched[0]++;
+                                        return;
+                                    }
+                                    // Field.getType() 在 TeaVM 上也返回 null（没有反射元数据），
+                                    // 换成 ldc String.class —— 保证非 null，且 equals 不会崩
+                                    if (owner.equals("java/lang/reflect/Field")
+                                            && mname.equals("getType")
+                                            && mdesc.equals("()Ljava/lang/Class;")) {
+                                        mv.visitInsn(Opcodes.POP);
+                                        mv.visitLdcInsn(org.objectweb.asm.Type.getObjectType("java/lang/String"));
+                                        patched[0]++;
+                                        return;
+                                    }
                                     // getClass() 在 TeaVM 上没有完整元数据，直接换成 ldc 当前类
                                     if (isGetClass) {
                                         mv.visitInsn(Opcodes.POP);

@@ -30,7 +30,7 @@ IMPL_SRC="impl/src"
 # 这些类由 impl/src 手写实现（Web Canvas2D 后端），不由生成器产出
 # launcher 源码里需要写 "包.类" 形式、而该包名同时又是类名的，必须从这里剔除
 LAUNCHER_STRIP="com/corrodinggames/rts/gameFramework/b,com/corrodinggames/rts/gameFramework/m"
-IMPL_CLASSES="android/content/Context,android/content/res/Resources,android/content/res/AssetManager,android/content/pm/PackageManager,android/content/SharedPreferences,android/opengl/GLES20,android/graphics/Canvas,android/graphics/Paint,android/graphics/Bitmap,android/graphics/Color,android/graphics/Rect,android/graphics/RectF,android/graphics/Matrix,android/graphics/Path,android/graphics/PorterDuff"
+IMPL_CLASSES="android/graphics/BitmapFactory,android/content/Context,android/content/res/Resources,android/content/res/AssetManager,android/content/pm/PackageManager,android/content/SharedPreferences,android/opengl/GLES20,android/graphics/Canvas,android/graphics/Paint,android/graphics/Bitmap,android/graphics/Color,android/graphics/Rect,android/graphics/RectF,android/graphics/Matrix,android/graphics/Path,android/graphics/PorterDuff"
 
 c_ok()   { printf '\033[1;32m✓\033[0m %s\n' "$*"; }
 c_info() { printf '\033[1;33m→\033[0m %s\n' "$*"; }
