@@ -12,10 +12,11 @@ public class Uri {
     public java.lang.String toString() { return null; }
     public Uri() { }
 
-    public static interface Builder {
-        Uri.Builder authority(java.lang.String p0);
-        Uri build();
-        Uri.Builder encodedPath(java.lang.String p0);
-        Uri.Builder scheme(java.lang.String p0);
+    public static class Builder {
+        public Uri.Builder authority(java.lang.String p0) { return null; }
+        public Uri build() { return null; }
+        public Uri.Builder encodedPath(java.lang.String p0) { return null; }
+        public Uri.Builder scheme(java.lang.String p0) { return null; }
+        public Builder() { }
     }
 }

@@ -18,7 +18,7 @@ public class Net {
         public int getLocalPort() { return 0; }
         public boolean isClosed() { return true; }
         public void setSoTimeout(int t) { }
-        public void bind(Object addr) { }
+        public void bind(SocketAddress addr) { }
     }
 
     /** java.net.Socket 替身 */
@@ -30,8 +30,9 @@ public class Net {
         public java.io.InputStream getInputStream() { return null; }
         public java.io.OutputStream getOutputStream() { return null; }
         public void setTcpNoDelay(boolean on) { }
-        public void connect(Object addr, int timeout) { }
-        public void connect(Object addr) { }
+        public void connect(SocketAddress addr, int timeout) { }
+        public void connect(SocketAddress addr) { }
+        
         public void setSoTimeout(int t) { }
         public InetAddress getInetAddress() { return new InetAddress(); }
         public int getPort() { return 0; }
@@ -43,7 +44,7 @@ public class Net {
     public static class DatagramSocket {
         public DatagramSocket() { }
         public DatagramSocket(int port) { }
-        public void send(Object p) { }
+        public void send(DatagramPacket p) { }
         public void receive(Object p) { }
         public void close() { }
         public void setReuseAddress(boolean on) { }
@@ -55,16 +56,21 @@ public class Net {
         public void receive(DatagramPacket p) { }
     }
 
+    /** java.net.SocketAddress 替身 */
+    public static class SocketAddress {
+        public SocketAddress() { }
+    }
+
     /** java.net.DatagramPacket 替身 */
     public static class DatagramPacket {
         public DatagramPacket(byte[] buf, int len) { }
         public DatagramPacket(byte[] buf, int len, Object addr, int port) { }
-        public DatagramPacket(byte[] buf, int len, Object sockAddr) { }
+        public DatagramPacket(byte[] buf, int len, SocketAddress sockAddr) { }
         public int getLength() { return 0; }
         public void setLength(int n) { }
         public byte[] getData() { return new byte[0]; }
         public int getOffset() { return 0; }
-        public Object getAddress() { return new InetAddress(); }
+        public InetAddress getAddress() { return new InetAddress(); }
         public int getPort() { return 0; }
         public void setAddress(Object a) { }
         public void setPort(int p) { }
@@ -103,10 +109,11 @@ public class Net {
     public static class InetSocketAddress {
         public InetSocketAddress(String host, int port) { }
         public InetSocketAddress(int port) { }
-        public InetSocketAddress(Object addr, int port) { }
+        public InetSocketAddress(InetAddress addr, int port) { }
+        public InetSocketAddress(byte[] addr, int port) { }
         public String getHostString() { return "localhost"; }
         public int getPort() { return 0; }
-        public Object getAddress() { return new InetAddress(); }
+        public InetAddress getAddress() { return new InetAddress(); }
         public boolean isUnresolved() { return false; }
     }
 
@@ -120,10 +127,35 @@ public class Net {
     public static class LinkedBlockingDeque<E> extends LinkedBlockingQueue<E> {
         public LinkedBlockingDeque() { super(); }
         public LinkedBlockingDeque(int cap) { super(cap); }
+        public LinkedBlockingDeque(java.util.Collection<? extends E> c) { super(); }
         public void putFirst(E e) { offer(e); }
         public void putLast(E e) { offer(e); }
+        public void addFirst(E e) { offer(e); }
+        public void addLast(E e) { offer(e); }
         public E pollFirst() { return poll(); }
         public E pollLast() { return poll(); }
+        public E takeFirst() { return poll(); }
+        public E takeLast() { return poll(); }
+        public boolean offerFirst(E e) { return offer(e); }
+        public boolean offerLast(E e) { return offer(e); }
+        public boolean add(E e) { return offer(e); }
+        public boolean addAll(java.util.Collection<? extends E> c) {
+            boolean any = false;
+            for (E e : c) any |= offer(e);
+            return any;
+        }
+    }
+
+    /** java.security.MessageDigest 替身（不做真摘要，联机口令用不到） */
+    public static class MessageDigest {
+        public static MessageDigest getInstance(String alg) { return new MessageDigest(); }
+        public void update(byte[] input) { }
+        public void update(byte[] input, int off, int len) { }
+        public void update(byte b) { }
+        public byte[] digest() { return new byte[16]; }
+        public byte[] digest(byte[] input) { return new byte[16]; }
+        public void reset() { }
+        public int getDigestLength() { return 16; }
     }
 
     /** java.net.SocketException 替身 */

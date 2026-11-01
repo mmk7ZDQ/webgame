@@ -31,6 +31,12 @@ public class RT {
     // java.util.ResourceBundle.clearCache
     public static void clearCache() { }
 
+    // java.io.FileInputStream.getFD
+    public java.io.FileDescriptor getFD() { return new java.io.FileDescriptor(); }
+
+    // java.lang.reflect.Field.getInt(Object) —— 重定向后接收者留在栈上，做成实例方法
+    public int getInt(Object target) { return 0; }
+
     // java.util.Locale.getISO3Language
     public String getISO3Language() { return "und"; }
 }

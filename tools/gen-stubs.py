@@ -105,6 +105,7 @@ def scan(apk, prefixes):
     static_methods = set()
     inst_methods = set()
     ifaces = set()
+    instantiated = set()   # 有 new-instance 的必然是 class，优先于 invoke-interface 判定
     static_fields = set()
     inst_fields = set()
 
@@ -169,6 +170,14 @@ def scan(apk, prefixes):
                                     ifaces.add(o)
                         except (IndexError, KeyError):
                             pass
+                    elif op == 0x22:      # new-instance
+                        try:
+                            ref = ins[i + 1]
+                            t = dex.types[ref]
+                            if t.startswith("L"):
+                                instantiated.add(t[1:-1])
+                        except (IndexError, KeyError):
+                            pass
                     elif op in OP_SGET:
                         try:
                             ref = ins[i + 1]
@@ -192,7 +201,7 @@ def scan(apk, prefixes):
 
     # 标注 static / interface
     for o in ifaces:
-        if o in classes:
+        if o in classes and o not in instantiated:   # 有构造调用的一律当 class
             classes[o].iface = True
     for (o, nm, params) in static_methods:
         if o in classes and (nm, params) in classes[o].methods:

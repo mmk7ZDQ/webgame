@@ -45,8 +45,12 @@ public final class StripMonitors {
         {"java/net/InetAddress",      "rwutil/Net$InetAddress"},
         {"java/net/NetworkInterface", "rwutil/Net$NetworkInterface"},
         {"java/net/SocketException",  "rwutil/Net$SocketException"},
+        {"java/net/SocketTimeoutException", "rwutil/Net$SocketTimeoutException"},
+        {"java/io/ObjectStreamField", "rwutil/Net$ObjectStreamField"},
         {"java/net/InetSocketAddress","rwutil/Net$InetSocketAddress"},
         {"java/net/UnknownHostException", "rwutil/Net$UnknownHostException"},
+        {"java/net/SocketAddress",    "rwutil/Net$SocketAddress"},
+        {"java/security/MessageDigest", "rwutil/Net$MessageDigest"},
         {"java/util/concurrent/LinkedBlockingDeque", "rwutil/Net$LinkedBlockingDeque"},
     };
 
@@ -61,6 +65,10 @@ public final class StripMonitors {
         {"java/lang/Thread", "getState", "()Ljava/lang/Thread$State;", "rwutil/RT", "getState"},
         {"java/util/ResourceBundle", "clearCache", "()V", "rwutil/RT", "clearCache"},
         {"java/util/Locale", "getISO3Language", "()Ljava/lang/String;", "rwutil/RT", "getISO3Language"},
+        {"java/util/concurrent/ConcurrentHashMap", "keys", "()Ljava/util/Enumeration;", "rwutil/RT", "keys"},
+        {"java/io/FileInputStream", "getFD", "()Ljava/io/FileDescriptor;", "rwutil/RT", "getFD"},
+        {"java/lang/reflect/Field", "getInt", "(Ljava/lang/Object;)I", "rwutil/RT", "getInt"},
+        {"java/nio/channels/FileChannel", "getFD", "()Ljava/io/FileDescriptor;", "rwutil/RT", "getFD"},
     };
 
     public static void main(String[] args) throws IOException {
