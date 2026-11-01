@@ -310,8 +310,50 @@ engine.a(ctx);                                                  // k.a(Context)
 | `DocumentBuilderFactory` | `javax.*`，生成后仍缺内部方法 |
 | `StringEntity(String, ContentType)` | 需要完整 httpclient 实现类 |
 
-**结论**：把 `game.i` 跑起来不是"再补几个桩"的量级 —— 它需要 TeaVM classlib 层面的扩展
-（`java.*` 那几个）加上一整条 Apache HttpClient 的假实现。这是一条有明确终点但很长的路。
+### 已突破：整台引擎能编译进 TeaVM（缺失 0）
+
+关键发现和手段：
+
+1. **`org/teavm/classlib/...` 的类会从 classpath 加载，`java.*` 不会。**
+   TeaVM 的类名映射是 `org.teavm.classlib.java.io.TXxx` ↔ `java.io.Xxx`。
+   直接往 classpath 放 `java/io/Xxx.class` 实测**无效**（被 classlib 遮蔽），
+   但放 `org/teavm/classlib/java/io/TXxx.class` **有效**。
+   `impl/classlib/` 下就是这种补丁（已补 `TObjectStreamField`、`TAtomicMarkableReference`）。
+2. **`javax.*` 走不了 classlib 映射**，只能全套重定向到 `rwutil.Xml`。
+3. **联机用的 Apache HttpClient 直接裁剪**：`TrimHttp` 用 ASM 把方法体里引用
+   `org/apache/http` 的方法整个换成 `return <默认值>`。补桩补不动 —— 每补一个类
+   就暴露整条类图（HttpPost → HttpParams → LogFactory …）。
+4. **`getClass()` 在 TeaVM 上没有元数据**，`getClass().equals(X.class)` 会变成
+   `null.equals(...)`。`PatchGetClass` 把 57 处 `getClass()` 换成 `ldc 当前类`。
+
+**构建流水线**（`build.sh wasm` 未来要串起来）：
+
+```
+rw.jar
+ → StripMonitors  (monitor→NOP + 类/方法重定向 + new 重定向)  → rw-nosync.jar
+ → TrimHttp       (裁掉引用 org/apache/http 的方法)           → rw-trimmed.jar
+ → PatchGetClass  (getClass 替换)                            → rw-final.jar
+ → TeaVM → classes.js（22 MB，gzip 后 1.6 MB）
+```
+
+### 当前卡点：`game.i.a(Context)` 初始化中途
+
+`new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
+`engine.a(ctx)` 崩在 `can't access property "$equals", var$2 is null`（某处 `null.equals(...)`）。
+
+已逐段排除（都能单独跑通）：
+
+| 步骤 | 结果 |
+|---|---|
+| `new gameFramework.utility.m(ctx)` | ✅ |
+| `gameFramework.cf.a()` | ✅ 返回 1598000000 |
+| `new gameFramework.cf(engine)` | ✅ |
+| `gameFramework.cg.C` | ✅ `init total` |
+| `engine.a(ctx)` 整体 | ❌ `$equals` on null |
+
+`init()` 的字节码里第一段 `if (aR)` 分支被跳过（`aR=false`），接着读
+`getDisplayMetrics().density`（已修）。崩点在偏移 5009 之后，尚未定位到具体行。
+TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体来缩小范围。
 
 | 类别 | 例子 | 难度 |
 |---|---|---|
@@ -444,3 +486,4 @@ engine.a(ctx);                                                  // k.a(Context)
 | 2026-11-01 | 第十九轮：**运行时补齐 + 类/方法级重定向**。新增 `impl/rwutil/`（并发队列、锁、执行器、socket 桩、RT 补丁）；`StripMonitors` 扩展为「monitor 剥离 + 类重定向 + 方法重定向」三合一。缺失符号 87 → 35，但呈震荡（每修一批暴露新一批） |
 | 2026-11-01 | 第二十轮：**自动补桩工具链**。`GenMissing`（解析 TeaVM 日志用 ASM 按原类名生成桩）+ `gen-loop.sh`（编译→生成→合并→再编译的循环）。缺失符号 35 → 7~10 并停止收敛；发现**类重定向会让方法描述符里的类型一起改名**，从而破坏与 JDK 的签名一致性，故第三方库必须按原类名生成 |
 | 2026-11-01 | 第二十一轮：**ASM 访问器顺序 + new 重定向**。发现自定义 `ClassVisitor` 若放在 `ClassRemapper` 之内则完全不会被调用（必须在外层）；新增「只重定向 new 指令」的方案解决 `PrintWriter(File)` 这类 classlib 缺构造的问题（子类 is-a 关系保持签名一致）；`gen-stubs` 增加 `EXTRA_METHODS` 补父类方法。缺失符号 10 → 5 |
+| 2026-11-01 | 第二十二轮：**整台引擎编译通过（缺失 0）**。① 发现 `org/teavm/classlib/` 命名空间可以从 classpath 加载（`java.*` 不行），用它补 `TObjectStreamField`/`TAtomicMarkableReference`；② `TrimHttp` 把联机用的 Apache HttpClient 方法体整体裁掉；③ `PatchGetClass` 处理 TeaVM 没有 `getClass()` 元数据的问题；④ 实现 `Resources`/`AssetManager`/`PackageManager`，补齐 `DisplayMetrics` 字段。`new game.i(ctx)` 在浏览器里成功，`engine.a(ctx)` 卡在某处 `null.equals()` |

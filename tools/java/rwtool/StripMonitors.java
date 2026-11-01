@@ -52,7 +52,19 @@ public final class StripMonitors {
         {"java/net/SocketAddress",    "rwutil/Net$SocketAddress"},
         {"java/security/MessageDigest", "rwutil/Net$MessageDigest"},
         {"java/util/concurrent/LinkedBlockingDeque", "rwutil/Net$LinkedBlockingDeque"},
-        {"java/io/ObjectStreamField", "rwutil/Misc$ObjectStreamField"},
+        {"org/apache/http/client/methods/HttpUriRequest", "rwutil/Http$Req"},
+        {"org/apache/http/client/HttpClient", "rwutil/Http$Client"},
+        {"org/apache/http/HttpResponse", "rwutil/Http$Resp"},
+        {"org/apache/http/HttpEntity", "rwutil/Http$Entity"},
+        {"org/apache/http/entity/StringEntity", "rwutil/Http$StringEntity"},
+        {"org/apache/http/entity/ContentType", "rwutil/Http$ContentType"},
+        {"org/apache/http/message/AbstractHttpMessage", "rwutil/Http$Message"},
+        {"org/apache/http/util/Args", "rwutil/Http$Args"},
+        {"org/apache/http/Consts", "rwutil/Http$Consts"},
+        {"org/apache/http/protocol/HTTP", "rwutil/Http$Protocol"},
+        {"javax/xml/parsers/DocumentBuilderFactory", "rwutil/Xml$Factory"},
+        {"javax/xml/parsers/DocumentBuilder", "rwutil/Xml$Builder"},
+
         {"java/util/concurrent/atomic/AtomicMarkableReference", "rwutil/Misc$AtomicMarkableReference"},
     };
 

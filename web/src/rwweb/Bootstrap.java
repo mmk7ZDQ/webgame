@@ -133,10 +133,7 @@ public class Bootstrap {
             step("37 FAILED rwRealMap: " + e);
         }
 
-        // 引擎入口（当前不可用）：还差 5 个符号 —— java.io.ObjectStreamField、
-        // AtomicMarkableReference（TeaVM classlib 内部依赖）、DocumentBuilderFactory、
-        // 以及 Apache HttpClient 的 HttpUriRequest/StringEntity 实现链。
-        // TeaVM 是静态可达性分析，引用到 game.i 就会把整棵树拉进来，所以这里保持断开。
+        try { rwGameEngine(); } catch (Throwable e) { step("43 FAILED engine: " + e); }
 
         // ---- 相机 + rAF 主循环 ----
         try {
@@ -859,12 +856,46 @@ public class Bootstrap {
         if (camY > mh) camY = mh;
     }
 
-    private static void rwGameEngineUnused() {
+    private static void rwGameEngine() {
         step("43 new android.content.Context");
         android.content.Context ctx = new android.content.Context();
         step("44 new game.i (GameEngine)");
         com.corrodinggames.rts.game.i engine = new com.corrodinggames.rts.game.i(ctx);
         step("45 engine constructed");
+        // 分段定位：先单独测 init() 里的第一个构造步骤
+        try {
+            step("46a new gameFramework.utility.m(ctx)");
+            Object idx = new com.corrodinggames.rts.gameFramework.utility.m(ctx);
+            step("46a ok: " + idx);
+        } catch (Throwable e) {
+            step("46a FAILED: " + e);
+        }
+
+        try {
+            step("46b gameFramework.cf.a()");
+            long t = com.corrodinggames.rts.gameFramework.cf.a();
+            step("46b ok: " + t);
+        } catch (Throwable e) {
+            step("46b FAILED: " + e);
+        }
+
+        try {
+            step("46c new gameFramework.cf(engine)");
+            Object cf = new com.corrodinggames.rts.gameFramework.cf(engine);
+            step("46c ok: " + cf);
+        } catch (Throwable e) {
+            step("46c FAILED: " + e);
+        }
+
+        try {
+            step("46d gameFramework.cg.C");
+            Object cg = com.corrodinggames.rts.gameFramework.cg.C;
+            step("46d ok: " + cg);
+        } catch (Throwable e) {
+            step("46d FAILED: " + e);
+        }
+
+        step("46 engine.a(ctx)");
         engine.a(ctx);
         step("46 engine.a(ctx) ok");
     }

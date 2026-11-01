@@ -70,6 +70,20 @@ EXTRA_METHODS = {
     ],
 }
 
+# 桩类需要补的字段（真机上由 Android 框架提供）
+EXTRA_FIELDS = {
+    "android/content/pm/PackageInfo": [
+        ("packageName", "java.lang.String", "\"com.corrodinggames.rts\""),
+        ("versionName", "java.lang.String", "\"1.15\""),
+    ],
+    "android/util/DisplayMetrics": [
+        ("densityDpi", "int", "160"),
+        ("scaledDensity", "float", "1.0f"),
+        ("xdpi", "float", "160f"),
+        ("ydpi", "float", "160f"),
+    ],
+}
+
 # 已知的全静态工具类：其所有方法都是 static（调用点未必覆盖到，需硬编码）
 ALL_STATIC = {
     "android/opengl/GLES20", "android/opengl/GLES10", "android/opengl/GLES11",
@@ -343,6 +357,9 @@ def emit(cls, classes, kids, indent, nested):
                 continue
             pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(ps))
             out.append(f"{pad}    public {simple}({pt}) {{ }}")
+
+    for (fn, ft, fv) in EXTRA_FIELDS.get(cls, []):
+        out.append(f"{pad}    public {ft} {fn} = {fv};")
 
     existing = {mk[0] for mk in c.methods}
     for (mn, desc, rt, body) in EXTRA_METHODS.get(cls, []):

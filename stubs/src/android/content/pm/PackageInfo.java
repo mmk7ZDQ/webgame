@@ -6,4 +6,6 @@ public class PackageInfo {
     public int versionCode;
 
     public PackageInfo() { }
+    public java.lang.String packageName = "com.corrodinggames.rts";
+    public java.lang.String versionName = "1.15";
 }

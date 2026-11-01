@@ -62,11 +62,52 @@ public class Context {
     }
 
     public ContentResolver getContentResolver() {
-        return null;
+        return new ContentResolver();
     }
 
+    /**
+     * 真机上按名字返回不同的系统服务。Web 端没有这些东西，
+     * 但引擎初始化会调 getSystemService(...).xxx()，返回 null 会直接崩，
+     * 所以给一个能接住任意调用的占位对象。
+     */
     public Object getSystemService(String name) {
-        return null;
+        if (name == null) return null;
+        if (name.equals("window")) return new WindowManager();
+        if (name.equals("layout_inflater")) return new LayoutInflater();
+        if (name.equals("audio")) return new ServicePlaceholder();
+        if (name.equals("vibrator")) return new Vibrator();
+        if (name.equals("connectivity")) return new Connectivity();
+        return new ServicePlaceholder();
+    }
+
+    /** 任意系统服务的兜底占位 */
+    public static class ServicePlaceholder {
+        public Object getDefaultDisplay() { return new Display(); }
+        public int getRotation() { return 0; }
+        public boolean isScreenOn() { return true; }
+    }
+
+    public static class WindowManager {
+        public Object getDefaultDisplay() { return new Display(); }
+    }
+
+    public static class LayoutInflater { }
+
+    public static class Vibrator {
+        public void vibrate(long ms) { }
+        public void cancel() { }
+    }
+
+    public static class Connectivity {
+        public Object getActiveNetworkInfo() { return null; }
+    }
+
+    /** android.view.Display 的替身 */
+    public static class Display {
+        public int getWidth() { return 1280; }
+        public int getHeight() { return 720; }
+        public int getRotation() { return 0; }
+        public int getDisplayId() { return 0; }
     }
 
     public int checkPermission(String permission, int pid, int uid) {

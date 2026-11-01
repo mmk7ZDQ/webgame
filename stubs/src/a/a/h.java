@@ -111,7 +111,7 @@ public class h {
     public void shutdownInput() {  }
     public void shutdownOutput() {  }
     public h() { }
-    public h(r p0) { }
     public h(java.net.DatagramSocket p0) { }
+    public h(r p0) { }
     public h(java.net.DatagramSocket p0, r p1) { }
 }
