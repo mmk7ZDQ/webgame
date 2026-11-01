@@ -918,6 +918,16 @@ public class Bootstrap {
             }
         }
         step("48 ticks done");
+
+        // 资源管线验证：从预打包的 JS 对象读地图
+        try {
+            String mapName = "maps/normal/l010;[demo]mission_1__-__Dividing_River.tmx";
+            java.io.InputStream is = ctx.getAssets().open(mapName);
+            int n = is == null ? -1 : is.available();
+            step("49 asset read: " + mapName + " -> " + n + " bytes");
+        } catch (Throwable e) {
+            step("49 asset FAILED: " + e);
+        }
     }
 
     /** 引用类字面量，迫使 TeaVM 编译该类及其可达方法 */

@@ -402,6 +402,18 @@ main 返回，耗时 424ms        → 约 85ms/帧
 > 注意：这是**空 tick**。没有地图、没有单位，tick 内部大部分逻辑是空转。
 > 「跑起真实游戏逻辑」还需要把地图/单位喂进去。
 
+### ✅ 资源管线打通（AssetManager 读真数据）
+
+引擎的地图加载是**同步**的（`AssetManager.open` 返回 InputStream），浏览器没有同步文件系统。
+方案：`tools/pack-assets-js.py` 从 TMX 出发递归解析它引用的 `.tsx` / `.png`，
+全部 base64 打进 `window.__RW_ASSETS`；`AssetManager.open(name)` 从里面解码成 `byte[]`。
+
+实测：关卡 1 那张图 38 个文件 / 338 KB 原始 → 464 KB base64，
+引擎读回来 **25443 字节**（与 TMX 真实大小一致）。
+
+> 坑：TMX/TSX 里的 `source="terrain/bitmaps/mountain.png"` 是相对 **`assets/tilesets/`** 的，
+> 不是相对地图所在目录。按地图目录解析会全线 404。
+
 ### 历史卡点：`game.i.a(Context)` 初始化中途
 
 `new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
@@ -556,3 +568,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十三轮：**引擎构建一键化 + 继续推进初始化**。新增 `tools/build-engine.sh`（rw.jar → 四道 ASM 变换 → TeaVM，一条命令出 21.2 MB 的 classes.js）；手写 `android.content.pm.Signature`（TeaVM 的 `toByteArray` 要访问 `data` 字段）；裁掉 `gameFramework.f.b(byte[])`（TeaVM 的 Formatter 不支持 `BigInteger` 的 `%X`）。初始化从 `.data is null` 推进到 `Error: null`（`custom.ch` 异常被 catch 后重抛，原始栈丢失） |
 | 2026-11-02 | 第二十四轮：**`game.i.a(Context)` 跑通**。从生成的 JS 反查出 `k.t().$o4()` 是抛 `custom.ch`（mod 自定义单位）的地方；新增 `PatchAthrow` 工具把 init 里所有 `athrow` 换成 `return`，让缺资源的子系统安静失败。引擎初始化链全绿：Context → game.i 构造 → utility.m → cf → cg.C → `engine.a(ctx) ok` |
 | 2026-11-02 | 第二十五轮：**游戏主循环 tick 跑通**。还原 `ak.run()` 的真实形状（`k.W()` → `k.t()` → `while(true) { ctx.a(delta,tick); sleep }`），在浏览器里手动驱动 5 帧 `k.a(FI)V` 全部成功，424ms / 5 帧 ≈ 85ms 每帧。注：这是空 tick（无地图无单位） |
+| 2026-11-02 | 第二十六轮：**资源管线打通**。`tools/pack-assets-js.py` 从 TMX 递归解析引用的 tsx/png，base64 打包成 `window.__RW_ASSETS`；`AssetManager` 改为从它读取（base64 → byte[]）。实测引擎读回关卡 1 的 TMX 25443 字节，与真实文件一致。踩坑：TMX 里的 `source=` 路径基准是 `assets/tilesets/` 而非地图目录 |
