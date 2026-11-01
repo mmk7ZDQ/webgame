@@ -475,10 +475,18 @@ com/corrodinggames/rts/game/b/b.a(Ljava/lang/String;II)      ← 拼 tilesets/ �
 com/corrodinggames/rts/game/b/b.a(Ljava/io/InputStream;Z)    ← ★ 这才是从流加载地图
 ```
 
-`b.a(InputStream, true)` 传 TMX 流进去，**不再报 "Unable to load tileset"**，
-新错误是 `can't access property "$a1058", var$0 is null` —— `game.b.j`
-（tile 渲染类，持有 `m.e` 位图 / `m.fi` / `Paint`）实例是 null，
-需要先给它造一个并赋给 `b` 的对应字段。
+`b.a(InputStream, boolean)` 传 TMX 流进去，**不再报 "Unable to load tileset"**，
+新错误是 `can't access property "$a1058", var$0 is null`。
+
+追进生成的 JS 定位到：`ccrgb_j_a1(var$9, var$12, var$10)` 在流加载的循环里被调用，
+`var$9`（一个 `game.b.j` 实例）为 null。
+
+**布尔参数试过 true / false，错误相同** —— 它不是「是否渲染」的开关。
+
+**`game.b.j` 是无 public 构造的类**（字段里持有 `m.e` 位图 / `m.fi` / `Paint`），
+且 `b.a(InputStream,Z)` 里用的是 `getstatic b.j.l` / `b.j.m` 两个**静态字段**。
+下一步要看这两个静态字段在哪儿被初始化 —— 大概率也在某个 `k` 的 init 阶段，
+而我们用 `PatchAthrow` 掐掉的正是那条链的一部分。
 
 **现状**：资源能读（25443 字节）、XML 能解析（map 135x125、32 个 tileset）、
 位图能同步解码（140x120）、引擎初始化与 tick 能跑。
@@ -644,3 +652,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十九轮：**`ab` 接口实现 + 关卡入口再排查**。写了 `AbStub`（`appFramework.ab` 的 25 个方法空实现），`engine.a(activity, view)` 调用不抛异常但也没加载任何东西；反查确认 `k.a(Activity, ab)` 只是暂停/停止。`game.b` 是 62 个类的子系统（TMX 解析 + tileset + 位图加载），是「引擎加载地图」真正要跨过的门槛 |
 | 2026-11-02 | 第三十轮：**同步位图解码打通**。`AssetManager` 返回带 `assetName` 的 `AssetStream`；打包脚本额外生成 `window.__RW_IMAGES`（每张 PNG 预解码成 `<img>`）；`BitmapFactory.decodeStream` 按名字查表 → `Bitmap.fromImageSource`。实测 `sand.png` 解出 **140×120**（真实尺寸），不再是 1×1 占位 |
 | 2026-11-02 | 第三十一轮：**找到地图加载的真实入口**。写 ASM 扫描器列出 `new game.b.l` 的全部调用点（只有 2 处），确认 `b.a(InputStream, boolean)` 是从流加载地图的正确入口。传 TMX 流进去后错误从 "Unable to load tileset" 变成 `$a1058 on null`（`game.b.j` tile 渲染器未初始化）。前置条件（XML 解析 + 位图同步解码）已全部就位 |
+| 2026-11-02 | 第三十二轮：**追进流加载内部**。定位到 null 是 `ccrgb_j_a1(var$9, ...)` 的第一个参数（`game.b.j` 实例）；试布尔参数 true/false 错误相同，说明它不是渲染开关；`game.b.j` 无 public 构造，流加载里用的是静态字段 `b.j.l` / `b.j.m`。下一步查这两个静态字段的初始化点 |

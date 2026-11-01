@@ -966,12 +966,12 @@ public class Bootstrap {
 
             // 引擎自己的地图加载：b.a(InputStream, boolean)
             try {
-                step("52b new game.b.b() + a(stream, true)");
+                step("52b new game.b.b() + a(stream, false)");
                 com.corrodinggames.rts.game.b.b mapObj =
                         new com.corrodinggames.rts.game.b.b();
                 java.io.InputStream ms = ctx.getAssets().open(mapName);
-                mapObj.a(ms, true);
-                step("52c map loaded via stream");
+                mapObj.a(ms, false);
+                step("52c map parsed (no render) ok");
             } catch (Throwable e) {
                 step("52c map load FAILED: " + e);
             }
