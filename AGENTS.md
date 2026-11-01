@@ -375,6 +375,33 @@ main 正常返回（无异常）
 从生成的 JS 里找 catch 块，反查 `(ccrg_k_t()).$o4()` 这类调用 ——
 `$o4` 是 TeaVM 内部重命名，javap 里查不到，只能从 JS 侧看。
 
+### ✅ 游戏主循环 tick 已跑通
+
+`ak.run()` 的真实形状（从字节码还原）：
+
+```java
+k.W();                                  // 静态初始化
+k ctx = k.t();                          // 拿 GameContext
+while (true) {
+    long t0 = nanoTime();
+    ctx.a(delta, tickCount);            // ← 主 tick，签名 (FI)V
+    long t1 = nanoTime();
+    Thread.sleep(...);                  // 帧率控制
+}
+```
+
+浏览器里手动驱动 5 帧，全部成功：
+
+```
+[step] 46 engine.a(ctx) ok
+[step] 47 tick 0 ok  …  tick 4 ok
+[step] 48 ticks done
+main 返回，耗时 424ms        → 约 85ms/帧
+```
+
+> 注意：这是**空 tick**。没有地图、没有单位，tick 内部大部分逻辑是空转。
+> 「跑起真实游戏逻辑」还需要把地图/单位喂进去。
+
 ### 历史卡点：`game.i.a(Context)` 初始化中途
 
 `new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
@@ -528,3 +555,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-01 | 第二十二轮：**整台引擎编译通过（缺失 0）**。① 发现 `org/teavm/classlib/` 命名空间可以从 classpath 加载（`java.*` 不行），用它补 `TObjectStreamField`/`TAtomicMarkableReference`；② `TrimHttp` 把联机用的 Apache HttpClient 方法体整体裁掉；③ `PatchGetClass` 处理 TeaVM 没有 `getClass()` 元数据的问题；④ 实现 `Resources`/`AssetManager`/`PackageManager`，补齐 `DisplayMetrics` 字段。`new game.i(ctx)` 在浏览器里成功，`engine.a(ctx)` 卡在某处 `null.equals()` |
 | 2026-11-02 | 第二十三轮：**引擎构建一键化 + 继续推进初始化**。新增 `tools/build-engine.sh`（rw.jar → 四道 ASM 变换 → TeaVM，一条命令出 21.2 MB 的 classes.js）；手写 `android.content.pm.Signature`（TeaVM 的 `toByteArray` 要访问 `data` 字段）；裁掉 `gameFramework.f.b(byte[])`（TeaVM 的 Formatter 不支持 `BigInteger` 的 `%X`）。初始化从 `.data is null` 推进到 `Error: null`（`custom.ch` 异常被 catch 后重抛，原始栈丢失） |
 | 2026-11-02 | 第二十四轮：**`game.i.a(Context)` 跑通**。从生成的 JS 反查出 `k.t().$o4()` 是抛 `custom.ch`（mod 自定义单位）的地方；新增 `PatchAthrow` 工具把 init 里所有 `athrow` 换成 `return`，让缺资源的子系统安静失败。引擎初始化链全绿：Context → game.i 构造 → utility.m → cf → cg.C → `engine.a(ctx) ok` |
+| 2026-11-02 | 第二十五轮：**游戏主循环 tick 跑通**。还原 `ak.run()` 的真实形状（`k.W()` → `k.t()` → `while(true) { ctx.a(delta,tick); sleep }`），在浏览器里手动驱动 5 帧 `k.a(FI)V` 全部成功，424ms / 5 帧 ≈ 85ms 每帧。注：这是空 tick（无地图无单位） |

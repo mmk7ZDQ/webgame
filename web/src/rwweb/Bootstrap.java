@@ -905,6 +905,19 @@ public class Bootstrap {
         step("46 engine.a(ctx)");
         engine.a(ctx);
         step("46 engine.a(ctx) ok");
+
+        // 主循环：ak.run() 里是 while(true) { ctx.a(delta, tick); sleep }
+        // 这里手动驱动几帧，看 tick 能不能跑
+        for (int i = 0; i < 5; i++) {
+            try {
+                engine.a(0.06f, i);
+                step("47 tick " + i + " ok");
+            } catch (Throwable e) {
+                step("47 tick " + i + " FAILED: " + e);
+                break;
+            }
+        }
+        step("48 ticks done");
     }
 
     /** 引用类字面量，迫使 TeaVM 编译该类及其可达方法 */
