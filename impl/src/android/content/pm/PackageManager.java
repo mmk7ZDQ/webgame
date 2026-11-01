@@ -11,6 +11,7 @@ public class PackageManager {
         INFO.packageName = "com.corrodinggames.rts";
         INFO.versionName = "1.15";
         INFO.versionCode = 176;
+        INFO.signatures = new Signature[]{ new Signature() };
     }
 
     public PackageManager() {

@@ -17,6 +17,6 @@ public class Intent {
     public Intent setType(java.lang.String p0) { return null; }
     public Intent() { }
     public Intent(java.lang.String p0) { }
-    public Intent(java.lang.String p0, android.net.Uri p1) { }
     public Intent(Context p0, java.lang.Class p1) { }
+    public Intent(java.lang.String p0, android.net.Uri p1) { }
 }

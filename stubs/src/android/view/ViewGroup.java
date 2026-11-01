@@ -15,7 +15,7 @@ public class ViewGroup {
         public int width;
 
         public LayoutParams() { }
-        public LayoutParams(android.content.Context p0, android.util.AttributeSet p1) { }
         public LayoutParams(int p0, int p1) { }
+        public LayoutParams(android.content.Context p0, android.util.AttributeSet p1) { }
     }
 }

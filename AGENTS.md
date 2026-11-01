@@ -336,6 +336,18 @@ rw.jar
  → TeaVM → classes.js（22 MB，gzip 后 1.6 MB）
 ```
 
+### 一键构建：`tools/build-engine.sh`
+
+把整条流水线串成一条命令（输出到 `/tmp/engine`）：
+
+```bash
+./tools/build-engine.sh
+# → ✓ /tmp/engine/classes.js  21.2 MB  缺失 0
+```
+
+它做：编译 ASM 工具 → 编 classlib 补丁 → 编 rwutil → StripMonitors →
+TrimHttp → PatchGetClass → TrimMethod → 编 launcher → TeaVM。
+
 ### 当前卡点：`game.i.a(Context)` 初始化中途
 
 `new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
@@ -487,3 +499,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-01 | 第二十轮：**自动补桩工具链**。`GenMissing`（解析 TeaVM 日志用 ASM 按原类名生成桩）+ `gen-loop.sh`（编译→生成→合并→再编译的循环）。缺失符号 35 → 7~10 并停止收敛；发现**类重定向会让方法描述符里的类型一起改名**，从而破坏与 JDK 的签名一致性，故第三方库必须按原类名生成 |
 | 2026-11-01 | 第二十一轮：**ASM 访问器顺序 + new 重定向**。发现自定义 `ClassVisitor` 若放在 `ClassRemapper` 之内则完全不会被调用（必须在外层）；新增「只重定向 new 指令」的方案解决 `PrintWriter(File)` 这类 classlib 缺构造的问题（子类 is-a 关系保持签名一致）；`gen-stubs` 增加 `EXTRA_METHODS` 补父类方法。缺失符号 10 → 5 |
 | 2026-11-01 | 第二十二轮：**整台引擎编译通过（缺失 0）**。① 发现 `org/teavm/classlib/` 命名空间可以从 classpath 加载（`java.*` 不行），用它补 `TObjectStreamField`/`TAtomicMarkableReference`；② `TrimHttp` 把联机用的 Apache HttpClient 方法体整体裁掉；③ `PatchGetClass` 处理 TeaVM 没有 `getClass()` 元数据的问题；④ 实现 `Resources`/`AssetManager`/`PackageManager`，补齐 `DisplayMetrics` 字段。`new game.i(ctx)` 在浏览器里成功，`engine.a(ctx)` 卡在某处 `null.equals()` |
+| 2026-11-02 | 第二十三轮：**引擎构建一键化 + 继续推进初始化**。新增 `tools/build-engine.sh`（rw.jar → 四道 ASM 变换 → TeaVM，一条命令出 21.2 MB 的 classes.js）；手写 `android.content.pm.Signature`（TeaVM 的 `toByteArray` 要访问 `data` 字段）；裁掉 `gameFramework.f.b(byte[])`（TeaVM 的 Formatter 不支持 `BigInteger` 的 `%X`）。初始化从 `.data is null` 推进到 `Error: null`（`custom.ch` 异常被 catch 后重抛，原始栈丢失） |
