@@ -414,6 +414,25 @@ main 返回，耗时 424ms        → 约 85ms/帧
 > 坑：TMX/TSX 里的 `source="terrain/bitmaps/mountain.png"` 是相对 **`assets/tilesets/`** 的，
 > 不是相对地图所在目录。按地图目录解析会全线 404。
 
+### ✅ XML 真解析（DOM 遍历可用）
+
+`rwutil.Xml` 从「返回空 Document 的桩」改成**桥接浏览器的 `DOMParser`**：
+`parse(InputStream)` 读字节转文本交给 DOMParser，`Document`/`Element`/`NodeList`
+全部代理到真实 DOM 节点。
+
+实测关卡 1 的 TMX：
+
+```
+[step] 49 asset read -> 25443 bytes
+[step] 50 xml root=map w=135 h=125
+[step] 51 tilesets=32
+```
+
+> 坑：`getElementsByTagName` 返回的是 `HTMLCollection`，取值要用 `.length` / `.item(i)`，
+> 不是 `.children`。
+
+**编译规模跳到真实值**：1,896 个类 / 16,890 个方法（之前冒烟测试只有 481 类）。
+
 ### 历史卡点：`game.i.a(Context)` 初始化中途
 
 `new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
@@ -569,3 +588,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十四轮：**`game.i.a(Context)` 跑通**。从生成的 JS 反查出 `k.t().$o4()` 是抛 `custom.ch`（mod 自定义单位）的地方；新增 `PatchAthrow` 工具把 init 里所有 `athrow` 换成 `return`，让缺资源的子系统安静失败。引擎初始化链全绿：Context → game.i 构造 → utility.m → cf → cg.C → `engine.a(ctx) ok` |
 | 2026-11-02 | 第二十五轮：**游戏主循环 tick 跑通**。还原 `ak.run()` 的真实形状（`k.W()` → `k.t()` → `while(true) { ctx.a(delta,tick); sleep }`），在浏览器里手动驱动 5 帧 `k.a(FI)V` 全部成功，424ms / 5 帧 ≈ 85ms 每帧。注：这是空 tick（无地图无单位） |
 | 2026-11-02 | 第二十六轮：**资源管线打通**。`tools/pack-assets-js.py` 从 TMX 递归解析引用的 tsx/png，base64 打包成 `window.__RW_ASSETS`；`AssetManager` 改为从它读取（base64 → byte[]）。实测引擎读回关卡 1 的 TMX 25443 字节，与真实文件一致。踩坑：TMX 里的 `source=` 路径基准是 `assets/tilesets/` 而非地图目录 |
+| 2026-11-02 | 第二十七轮：**Xml 桥接 DOMParser + 全链路验证**。`rwutil.Xml` 改为代理真实 DOM，TMX 解析出 `root=map w=135 h=125`、遍历出 32 个 tileset。编译规模 481 → **1,896 类 / 16,890 方法**（真实值）。修 `build-engine.sh` 的 `set -e` 假失败与 rwutil 编译缺 TeaVM classpath |

@@ -61,7 +61,9 @@ N=$(grep -cE '^ERROR' /tmp/engine-build.log || true)
 if [ -s "$OUTDIR/classes.js" ]; then
   printf '✓ %s/classes.js  %.1f MB  缺失 %s\n' "$OUTDIR" \
     "$(stat -c%s "$OUTDIR/classes.js" | awk '{print $1/1048576}')" "$N"
-  [ "$N" -gt 0 ] && grep -E '^ERROR' /tmp/engine-build.log | sed 's/^ERROR: //' | sort -u | head -5
+  if [ "$N" -gt 0 ]; then
+    grep -E '^ERROR' /tmp/engine-build.log | sed 's/^ERROR: //' | sort -u | head -5
+  fi
 else
   echo "✗ 未生成 classes.js，缺失 $N"; grep -E '^ERROR' /tmp/engine-build.log | sed 's/^ERROR: //' | sort -u | head -8
   exit 1
