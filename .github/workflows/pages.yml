@@ -22,9 +22,25 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      # 只发布站点需要的部分：落地页 + 可运行 demo + 文档
+      # （stubs/ 的 190 个桩源文件、tools/ 的分析脚本不进站点）
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp -r demo _site/demo
+          cp -r docs _site/docs
+          touch _site/.nojekyll
+
+      - name: Show what will be published
+        run: |
+          du -sh _site
+          find _site -maxdepth 2 -type d | sort
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -19,6 +19,27 @@
 
 ---
 
+## 在线演示
+
+`demo/` 是一个可以直接打开的验证页 —— **不是截图**，是 Rusted Warfare 的原始字节码
+在浏览器里跑出来的结果：
+
+- `android.graphics.*` 绘制（矩形/圆/路径/文本）
+- 游戏自己的 `gameFramework/m/h` 适配器转调
+- `Bitmap → m/e → m/h → drawBitmap` 图像链路
+- 真实贴图 `units/tanks/tank.png`
+- **真实关卡「Dividing River」三层叠加，16,875 tile / 220ms**
+- `GLES20` 编译 GLSL 着色器并绘制三角形
+
+```bash
+python3 -m http.server 8098   # 然后打开 http://127.0.0.1:8098/
+```
+
+`demo/classes.js` 与 `demo/maps/` 是**刻意提交**的预编译产物，
+这样 GitHub Pages 不需要装 JDK / TeaVM 就能直接部署。
+
+---
+
 ## 快速开始
 
 ```bash
