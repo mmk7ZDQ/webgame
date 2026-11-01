@@ -37,7 +37,11 @@ rm -rf "$B/rwutil"; mkdir -p "$B/rwutil"
 "$JAVA" -cp "$RWT:$ASM:$ASMC" rwtool.StripMonitors  "$B/rw.jar" "$B/rw-nosync.jar"  >/dev/null
 "$JAVA" -cp "$RWT:$ASM:$ASMT"  rwtool.TrimHttp       "$B/rw-nosync.jar" "$B/rw-trimmed.jar" >/dev/null
 "$JAVA" -cp "$RWT:$ASM"        rwtool.PatchGetClass  "$B/rw-trimmed.jar" "$B/rw-final.jar"  >/dev/null
-"$JAVA" -cp "$RWT:$ASM:$ASMT"  rwtool.TrimMethod    "$B/rw-final.jar" "$B/rw-final2.jar" \
+# init 里失败就抛的子系统（mod 自定义单位）先放过：athrow → return
+"$JAVA" -cp "$RWT:$ASM:$ASMT"  rwtool.PatchAthrow    "$B/rw-final.jar" "$B/rw-init.jar" \
+  "com/corrodinggames/rts/game/i#a" >/dev/null
+
+"$JAVA" -cp "$RWT:$ASM:$ASMT"  rwtool.TrimMethod    "$B/rw-init.jar" "$B/rw-final2.jar" \
   "com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader#setArgumentWithMapping" \
   "com/corrodinggames/rts/game/units/custom/logicBooleans/LogicBooleanLoader#setArgumentsRaw" \
   "com/corrodinggames/rts/gameFramework/f#b" >/dev/null

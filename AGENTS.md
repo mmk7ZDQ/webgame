@@ -348,7 +348,34 @@ rw.jar
 它做：编译 ASM 工具 → 编 classlib 补丁 → 编 rwutil → StripMonitors →
 TrimHttp → PatchGetClass → TrimMethod → 编 launcher → TeaVM。
 
-### 当前卡点：`game.i.a(Context)` 初始化中途
+### ✅ `game.i.a(Context)` 已跑通（跳过 mod 加载）
+
+浏览器实测日志：
+
+```
+[step] 44 new game.i (GameEngine)
+[step] 45 engine constructed
+[step] 46a new gameFramework.utility.m(ctx)   ✓
+[step] 46b gameFramework.cf.a()               ✓
+[step] 46c new gameFramework.cf(engine)       ✓
+[step] 46d gameFramework.cg.C                 ✓ init total
+[step] 46  engine.a(ctx) ok
+main 正常返回（无异常）
+```
+
+**手段**：`init()` 里有一部分会抛 `custom.ch`（mod 自定义单位系统，48 个类引用），
+我们的 AssetManager 是空的，它必然失败，而调用方把它包成 `RuntimeException` 重抛，
+导致整个初始化中断。新增 `PatchAthrow` 工具把 `game.i.a(Context)` 里所有 `athrow`
+换成 `return` —— 首版不要 mod 支持，让它失败后安静返回。
+
+> 注意：这是「半初始化」。Context / 设置 / 资源索引 / 渲染器都建好了，
+> 但自定义单位与资源表没加载。`k` 对象存在，不代表每个子系统都可用。
+
+**定位方法**（TeaVM 无 Java 异常栈时的通用手段）：
+从生成的 JS 里找 catch 块，反查 `(ccrg_k_t()).$o4()` 这类调用 ——
+`$o4` 是 TeaVM 内部重命名，javap 里查不到，只能从 JS 侧看。
+
+### 历史卡点：`game.i.a(Context)` 初始化中途
 
 `new game.i(ctx)` **已经在浏览器里成功**（`45 engine constructed`）。
 `engine.a(ctx)` 崩在 `can't access property "$equals", var$2 is null`（某处 `null.equals(...)`）。
@@ -500,3 +527,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-01 | 第二十一轮：**ASM 访问器顺序 + new 重定向**。发现自定义 `ClassVisitor` 若放在 `ClassRemapper` 之内则完全不会被调用（必须在外层）；新增「只重定向 new 指令」的方案解决 `PrintWriter(File)` 这类 classlib 缺构造的问题（子类 is-a 关系保持签名一致）；`gen-stubs` 增加 `EXTRA_METHODS` 补父类方法。缺失符号 10 → 5 |
 | 2026-11-01 | 第二十二轮：**整台引擎编译通过（缺失 0）**。① 发现 `org/teavm/classlib/` 命名空间可以从 classpath 加载（`java.*` 不行），用它补 `TObjectStreamField`/`TAtomicMarkableReference`；② `TrimHttp` 把联机用的 Apache HttpClient 方法体整体裁掉；③ `PatchGetClass` 处理 TeaVM 没有 `getClass()` 元数据的问题；④ 实现 `Resources`/`AssetManager`/`PackageManager`，补齐 `DisplayMetrics` 字段。`new game.i(ctx)` 在浏览器里成功，`engine.a(ctx)` 卡在某处 `null.equals()` |
 | 2026-11-02 | 第二十三轮：**引擎构建一键化 + 继续推进初始化**。新增 `tools/build-engine.sh`（rw.jar → 四道 ASM 变换 → TeaVM，一条命令出 21.2 MB 的 classes.js）；手写 `android.content.pm.Signature`（TeaVM 的 `toByteArray` 要访问 `data` 字段）；裁掉 `gameFramework.f.b(byte[])`（TeaVM 的 Formatter 不支持 `BigInteger` 的 `%X`）。初始化从 `.data is null` 推进到 `Error: null`（`custom.ch` 异常被 catch 后重抛，原始栈丢失） |
+| 2026-11-02 | 第二十四轮：**`game.i.a(Context)` 跑通**。从生成的 JS 反查出 `k.t().$o4()` 是抛 `custom.ch`（mod 自定义单位）的地方；新增 `PatchAthrow` 工具把 init 里所有 `athrow` 换成 `return`，让缺资源的子系统安静失败。引擎初始化链全绿：Context → game.i 构造 → utility.m → cf → cg.C → `engine.a(ctx) ok` |
