@@ -466,8 +466,23 @@ main 返回，耗时 424ms        → 约 85ms/帧
 > 坑：`assets/tilesets/` 下的贴图路径不是 `terrain/bitmaps/sand.png`，而是
 > `bitmaps/sand.png` —— TMX 里的 `source` 已经带了 `terrain/` 前缀，拼的时候别再补一层。
 
+### 地图加载：找到正确入口，但还差一步
+
+用 ASM 扫 `new game.b.l` 的调用点，全 jar 只有两处：
+
+```
+com/corrodinggames/rts/game/b/b.a(Ljava/lang/String;II)      ← 拼 tilesets/ 前缀，是读 tileset 的
+com/corrodinggames/rts/game/b/b.a(Ljava/io/InputStream;Z)    ← ★ 这才是从流加载地图
+```
+
+`b.a(InputStream, true)` 传 TMX 流进去，**不再报 "Unable to load tileset"**，
+新错误是 `can't access property "$a1058", var$0 is null` —— `game.b.j`
+（tile 渲染类，持有 `m.e` 位图 / `m.fi` / `Paint`）实例是 null，
+需要先给它造一个并赋给 `b` 的对应字段。
+
 **现状**：资源能读（25443 字节）、XML 能解析（map 135x125、32 个 tileset）、
-引擎初始化与 tick 能跑 —— 但「引擎自己把那 32 个 tileset 加载成世界」这一步没打通。
+位图能同步解码（140x120）、引擎初始化与 tick 能跑。
+「引擎把那 32 个 tileset 加载成世界」还差 `game.b.j` 的初始化。
 
 ### 历史卡点：`game.i.a(Context)` 初始化中途
 
@@ -628,3 +643,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十八轮：**`game.b` 类/包同名冲突修复 + 地图加载入口调研**。`com/corrodinggames/rts/game/b.class` 与 `game/b/` 包冲突，加入 `LAUNCHER_STRIP`；摸清 `game.b.l` 的 String 参数是 tileset 路径而非地图路径，真正的关卡加载在 `k.a(Activity, ab)`（需要造 `ab` 游戏视图实现）。站点已上线 GitHub Pages |
 | 2026-11-02 | 第二十九轮：**`ab` 接口实现 + 关卡入口再排查**。写了 `AbStub`（`appFramework.ab` 的 25 个方法空实现），`engine.a(activity, view)` 调用不抛异常但也没加载任何东西；反查确认 `k.a(Activity, ab)` 只是暂停/停止。`game.b` 是 62 个类的子系统（TMX 解析 + tileset + 位图加载），是「引擎加载地图」真正要跨过的门槛 |
 | 2026-11-02 | 第三十轮：**同步位图解码打通**。`AssetManager` 返回带 `assetName` 的 `AssetStream`；打包脚本额外生成 `window.__RW_IMAGES`（每张 PNG 预解码成 `<img>`）；`BitmapFactory.decodeStream` 按名字查表 → `Bitmap.fromImageSource`。实测 `sand.png` 解出 **140×120**（真实尺寸），不再是 1×1 占位 |
+| 2026-11-02 | 第三十一轮：**找到地图加载的真实入口**。写 ASM 扫描器列出 `new game.b.l` 的全部调用点（只有 2 处），确认 `b.a(InputStream, boolean)` 是从流加载地图的正确入口。传 TMX 流进去后错误从 "Unable to load tileset" 变成 `$a1058 on null`（`game.b.j` tile 渲染器未初始化）。前置条件（XML 解析 + 位图同步解码）已全部就位 |

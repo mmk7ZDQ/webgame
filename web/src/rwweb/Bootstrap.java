@@ -964,6 +964,18 @@ public class Bootstrap {
                 step("50b bitmap FAILED: " + e);
             }
 
+            // 引擎自己的地图加载：b.a(InputStream, boolean)
+            try {
+                step("52b new game.b.b() + a(stream, true)");
+                com.corrodinggames.rts.game.b.b mapObj =
+                        new com.corrodinggames.rts.game.b.b();
+                java.io.InputStream ms = ctx.getAssets().open(mapName);
+                mapObj.a(ms, true);
+                step("52c map loaded via stream");
+            } catch (Throwable e) {
+                step("52c map load FAILED: " + e);
+            }
+
             // 让引擎自己的 TMX 解析器跑一遍（game.b.l）
                 try {
                     step("52 new game.b.b()");
