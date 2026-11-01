@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Rusted Warfare Web · 实现验证 Demo</title>
+<style>
+  body{background:#0d1117;color:#c9d1d9;font:14px/1.6 ui-monospace,monospace;margin:0;padding:24px}
+  h1{font-size:16px;color:#d9743a;margin:0 0 4px}
+  p{color:#8b949e;margin:0 0 18px;font-size:13px}
+  canvas{border:1px solid #30363d;image-rendering:pixelated}
+  #log{margin-top:14px;color:#5fa87a;white-space:pre-wrap;font-size:11px;max-height:180px;overflow:auto;border:1px solid #21262d;padding:8px}
+</style>
+</head>
+<body>
+<h1>Rusted Warfare · Web 移植验证</h1>
+<p>这不是截图，是 Rusted Warfare 1.15 的<b>原始字节码</b>在浏览器里跑出来的结果：<br>
+材质与贴图经游戏自己的 <code>gameFramework/m/h</code>（Canvas 后端）绘制，底层是
+<a href="https://github.com/">本项目</a>手写的 Web Canvas2D 实现。</p>
+<p style="color:#6e7681">检测项：android.graphics 绘制 · m/h 适配器 · 图像链路 · GLES20→WebGL · 真实关卡三层叠加</p>
+<img id="tile0" src="maps/tiles/decoration.png" style="display:none" alt="">
+<img id="tile1" src="maps/tiles/longgrass.png" style="display:none" alt="">
+<img id="tile2" src="maps/tiles/longgrass2shallowwater_flat.png" style="display:none" alt="">
+<img id="tile3" src="maps/tiles/misc.png" style="display:none" alt="">
+<img id="tile4" src="maps/tiles/mountain.png" style="display:none" alt="">
+<img id="tile5" src="maps/tiles/mountain2longgrass_flat.png" style="display:none" alt="">
+<img id="tile6" src="maps/tiles/mountain2sand_flat.png" style="display:none" alt="">
+<img id="tile7" src="maps/tiles/sand.png" style="display:none" alt="">
+<img id="tile8" src="maps/tiles/shallowwater.png" style="display:none" alt="">
+<img id="tile9" src="maps/tiles/shallowwater2water_flat.png" style="display:none" alt="">
+<img id="tile10" src="maps/tiles/units.png" style="display:none" alt="">
+<img id="tile11" src="maps/tiles/water.png" style="display:none" alt="">
+<canvas id="tankCanvas" style="display:none"></canvas>
+<canvas id="host"></canvas>
+<div id="log"></div>
+<script src="maps/l010__demo_mission_1__-__Dividing_River.js"></script>
+<script src="map-loader.js"></script>
+<script src="classes.js"></script>
+<script>
+  const log = [];
+  const orig = console.log;
+  console.log = (...a) => { log.push(a.join(' ')); orig(...a); };
+  const start = () => {
+  try {
+    main();
+    /* 步骤日志已由 Java 侧直接写入，这里不覆盖 */
+  } catch (e) {
+    log.push('ERROR: ' + e);
+    /* 步骤日志已由 Java 侧直接写入，这里不覆盖 */
+    document.getElementById('log').style.color = '#c05548';
+  }
+  };
+  function domError(m){ const l=document.getElementById('log'); if(l) l.textContent += m + '\n'; }
+
+  // 贴图作为 <img> 写在 body 里，解析时就开始加载；全部就绪后立即跑 main。
+  // （不能在 window.load 里做——headless 截图在 load 之后立刻拍，会看不到结果）
+  const TILE_COUNT = 12;
+  let pending = TILE_COUNT + 1;   // +1 是 tank.png
+  const ready = () => { if (--pending === 0) { loadRwMap(); start(); } };
+
+  for (let i = 0; i < TILE_COUNT; i++) {
+    const el = document.getElementById('tile' + i);
+    if (!el) { ready(); continue; }
+    if (el.complete && el.naturalWidth) ready(); else {
+      el.onload = ready;
+      el.onerror = () => { domError('贴图失败: ' + el.src); ready(); };
+    }
+  }
+
+  const tank = new Image();
+  tank.onload = () => {
+    const cv = document.getElementById('tankCanvas');
+    cv.width = tank.naturalWidth; cv.height = tank.naturalHeight;
+    cv.getContext('2d').drawImage(tank, 0, 0);
+    ready();
+  };
+  tank.onerror = () => { domError('tank.png 失败'); ready(); };
+  tank.src = 'assets/tank.png';
+
+</script>
+</body>
+</html>

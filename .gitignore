@@ -1,0 +1,22 @@
+# 构建中间产物（build.sh 可重建）
+build/
+web/out/
+stubs/out/
+stubs/stubs.jar
+bench/
+
+# 注意：demo/ 下的 classes.js 与 maps 是**刻意提交**的，
+# 这样 GitHub Pages 不需要装 JDK/TeaVM 就能直接部署。
+
+# 第三方工具链（体积大，按 README 的命令自取）
+tools/dex-tools/
+tools/dex-tools.zip
+tools/teavm-lib/
+
+# Python
+__pycache__/
+*.pyc
+
+# 分析中间产物
+calls.json
+*.apk
