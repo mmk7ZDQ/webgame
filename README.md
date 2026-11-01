@@ -7,6 +7,11 @@
 
 **结论：能。** 但「能」有三种完全不同的含义，工作量和体验差两个数量级。
 
+**在线地址**
+
+- 落地页 → https://mmk7zdq.github.io/webgame/
+- 可交互 demo → https://mmk7zdq.github.io/webgame/demo/
+
 ---
 
 ## 30 秒选择
@@ -20,6 +25,13 @@
 ---
 
 ## 在线演示
+
+**https://mmk7zdq.github.io/webgame/** —— 落地页（可行性分析、实测数据、路线对比）
+**https://mmk7zdq.github.io/webgame/demo/** —— 可交互 demo（真实关卡 + 相机控制）
+
+---
+
+## 在线演示（旧）
 
 `demo/` 是一个可以直接打开的验证页 —— **不是截图**，是 Rusted Warfare 的原始字节码
 在浏览器里跑出来的结果：
