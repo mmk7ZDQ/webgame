@@ -52,6 +52,18 @@ public final class StripMonitors {
         {"java/net/SocketAddress",    "rwutil/Net$SocketAddress"},
         {"java/security/MessageDigest", "rwutil/Net$MessageDigest"},
         {"java/util/concurrent/LinkedBlockingDeque", "rwutil/Net$LinkedBlockingDeque"},
+        {"java/io/ObjectStreamField", "rwutil/Misc$ObjectStreamField"},
+        {"java/util/concurrent/atomic/AtomicMarkableReference", "rwutil/Misc$AtomicMarkableReference"},
+    };
+
+    /**
+     * 只重定向 new 指令的目标类（不改方法描述符）。
+     *
+     * 适用于「TeaVM classlib 缺某个构造」的情况：让 new 指向我们写的子类，
+     * 而描述符里的原类名保持不变 —— 子类是 is-a 关系，后续调用与传参都还成立。
+     */
+    private static final String[][] NEW_REDIRECT = {
+        {"java/io/PrintWriter", "rwutil/RLPrintWriter"},
     };
 
     /** 方法级重定向：{owner, name, desc, newOwner, newName} */
@@ -76,6 +88,8 @@ public final class StripMonitors {
             System.err.println("用法: java rwtool.StripMonitors <in.jar> <out.jar>");
             System.exit(2);
         }
+        final java.util.Map<String, String> newRedirect = new java.util.HashMap<String, String>();
+        for (String[] p : NEW_REDIRECT) newRedirect.put(p[0], p[1]);
         java.util.Map<String, String> remap = new java.util.HashMap<String, String>();
         for (String[] p : REDIRECT) remap.put(p[0], p[1]);
         int stripped = 0, classes = 0;
@@ -93,7 +107,11 @@ public final class StripMonitors {
                     int[] cnt = new int[1];
                     ClassReader cr = new ClassReader(data);
                     ClassWriter cw = new ClassWriter(0);
-                    final ClassVisitor target = new ClassVisitor(Opcodes.ASM9, cw) {
+                    // 注意顺序：自定义访问器必须在 ClassRemapper 之外，
+                    // 否则它的 visitMethod 永远不会被调用（ClassRemapper 会先接管）。
+                    ClassVisitor remapper = new org.objectweb.asm.commons.ClassRemapper(
+                            cw, new org.objectweb.asm.commons.SimpleRemapper(remap));
+                    final ClassVisitor target = new ClassVisitor(Opcodes.ASM9, remapper) {
                         @Override
                         public MethodVisitor visitMethod(int access, String name, String desc,
                                                          String sig, String[] ex) {
@@ -102,6 +120,12 @@ public final class StripMonitors {
                                 @Override
                                 public void visitMethodInsn(int opcode, String owner, String name,
                                                             String desc, boolean itf) {
+                                    // new 被重定向到子类后，对应的 <init> 也要跟着换 owner
+                                    // （描述符保持不变，因为子类提供同名同签名的构造）
+                                    if (newRedirect.containsKey(owner)) {
+                                        owner = newRedirect.get(owner);
+                                        itf = false;
+                                    }
                                     for (String[] r : METHOD_REDIRECT) {
                                         if (r[0].equals(owner) && r[1].equals(name) && r[2].equals(desc)) {
                                             owner = r[3];
@@ -111,6 +135,14 @@ public final class StripMonitors {
                                         }
                                     }
                                     super.visitMethodInsn(opcode, owner, name, desc, itf);
+                                }
+
+                                @Override
+                                public void visitTypeInsn(int opcode, String type) {
+                                    if (opcode == Opcodes.NEW && newRedirect.containsKey(type)) {
+                                        type = newRedirect.get(type);
+                                    }
+                                    super.visitTypeInsn(opcode, type);
                                 }
 
                                 @Override
@@ -125,9 +157,7 @@ public final class StripMonitors {
                             };
                         }
                     };
-                    ClassVisitor remapper = new org.objectweb.asm.commons.ClassRemapper(
-                            target, new org.objectweb.asm.commons.SimpleRemapper(remap));
-                    cr.accept(remapper, 0);
+                    cr.accept(target, 0);
                     data = cw.toByteArray();
                     stripped += cnt[0];
                 }

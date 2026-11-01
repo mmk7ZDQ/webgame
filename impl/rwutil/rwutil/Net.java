@@ -158,6 +158,12 @@ public class Net {
         public int getDigestLength() { return 16; }
     }
 
+    /** java.net.SocketTimeoutException 替身 */
+    public static class SocketTimeoutException extends SocketException {
+        public SocketTimeoutException() { super(); }
+        public SocketTimeoutException(String m) { super(m); }
+    }
+
     /** java.net.SocketException 替身 */
     public static class SocketException extends java.io.IOException {
         public SocketException() { super(); }

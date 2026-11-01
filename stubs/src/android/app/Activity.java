@@ -24,4 +24,9 @@ public class Activity {
     public void startActivity(android.content.Intent p0) {  }
     public void startActivityForResult(android.content.Intent p0, int p1) {  }
     public Activity() { }
+    public boolean isFinishing() { return false; }
+    public boolean isDestroyed() { return false; }
+    public void runOnUiThread(java.lang.Runnable p0) {  }
+    public android.view.WindowManager getWindowManager() { return null; }
+    public int getRequestedOrientation() { return 0; }
 }

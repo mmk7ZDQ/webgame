@@ -88,7 +88,7 @@ public final class GenMissing {
                 //  - java.*/javax.* 不能自己定义（javac/TeaVM 会拒绝）
                 //  - com.* 是游戏自己的类，覆盖会破坏逻辑
                 //  - android.*/rwutil.* 是我们的层，要手工改
-                if (name.startsWith("java/") || name.startsWith("javax/")
+                if (name.startsWith("java/")
                         || name.startsWith("com/") || name.startsWith("android/")
                         || name.startsWith("rwutil/")) {
                     continue;
@@ -132,12 +132,21 @@ public final class GenMissing {
             int lp = sig.indexOf('(');
             String mname = sig.substring(0, lp);
             String desc = sig.substring(lp);
-            if (mname.equals("<init>") || mname.equals("<clinit>")) continue;
+            if (mname.equals("<clinit>")) continue;
             int rp = desc.lastIndexOf(')');
             String ret = desc.substring(rp + 1);
 
             if (isIface) {
                 cw.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, mname, desc, null, null).visitEnd();
+            } else if (mname.equals("<init>")) {
+                // 带参构造：调父类无参构造即可
+                MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", desc, null, null);
+                mv.visitCode();
+                mv.visitVarInsn(Opcodes.ALOAD, 0);
+                mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+                mv.visitInsn(Opcodes.RETURN);
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
             } else {
                 MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, mname, desc, null, null);
                 mv.visitCode();

@@ -27,6 +27,22 @@ from importlib.machinery import SourceFileLoader
 _here = os.path.dirname(os.path.abspath(__file__))
 _m = SourceFileLoader("dc", os.path.join(_here, "dex-calls.py")).load_module()
 
+def split_params(desc):
+    """把 JVM 参数描述符串切成单个类型描述符，如 "IILjava/lang/String;" → ["I","I","Ljava/lang/String;"]"""
+    if not desc:
+        return []
+    out, i = [], 0
+    while i < len(desc):
+        j = i
+        while desc[j] == '[':
+            j += 1
+        if desc[j] == 'L':
+            j = desc.index(';', j)
+        out.append(desc[i:j + 1])
+        i = j + 1
+    return out
+
+
 PRIM = {"V": "void", "Z": "boolean", "B": "byte", "S": "short",
         "C": "char", "I": "int", "J": "long", "F": "float", "D": "double"}
 DEFAULT = {"void": "", "boolean": "return false;", "int": "return 0;", "long": "return 0L;",
@@ -38,6 +54,21 @@ OPS_INVOKE = set(range(0x6E, 0x73)) | set(range(0x74, 0x79))
 OP_STATIC = {0x71, 0x77}          # invoke-static / range
 OP_INTERFACE = {0x72, 0x78}       # invoke-interface / range
 OP_SGET = set(range(0x60, 0x66))  # sget / sput 系列
+
+# 被调用的方法 owner 是子类、但定义在父类的情况：
+# gen-stubs 只看到子类上的调用，父类桩里就缺这个方法。手工补。
+EXTRA_METHODS = {
+    "android/app/Activity": [
+        ("isFinishing", "()Z", "boolean", "return false;"),
+        ("isDestroyed", "()Z", "boolean", "return false;"),
+        ("runOnUiThread", "(Ljava/lang/Runnable;)V", "void", ""),
+        ("getWindowManager", "()Landroid/view/WindowManager;", "android.view.WindowManager", "return null;"),
+        ("getWindow", "()Landroid/view/Window;", "android.view.Window", "return null;"),
+        ("setRequestedOrientation", "(I)V", "void", ""),
+        ("getRequestedOrientation", "()I", "int", "return 0;"),
+        ("finish", "()V", "void", ""),
+    ],
+}
 
 # 已知的全静态工具类：其所有方法都是 static（调用点未必覆盖到，需硬编码）
 ALL_STATIC = {
@@ -312,6 +343,14 @@ def emit(cls, classes, kids, indent, nested):
                 continue
             pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(ps))
             out.append(f"{pad}    public {simple}({pt}) {{ }}")
+
+    existing = {mk[0] for mk in c.methods}
+    for (mn, desc, rt, body) in EXTRA_METHODS.get(cls, []):
+        if mn in existing:
+            continue
+        params = desc[1:desc.index(')')]
+        pt = ", ".join(f"{descriptor_to_type(p, pkg)} p{i}" for i, p in enumerate(split_params(params)))
+        out.append(f"{pad}    public {rt} {mn}({pt}) {{ {body} }}")
 
     for k in sorted(kids.get(cls, [])):
         out.append("")

@@ -133,7 +133,10 @@ public class Bootstrap {
             step("37 FAILED rwRealMap: " + e);
         }
 
-        try { rwGameEngine(); } catch (Throwable e) { step("43 FAILED engine: " + e); }
+        // 引擎入口（当前不可用）：还差 5 个符号 —— java.io.ObjectStreamField、
+        // AtomicMarkableReference（TeaVM classlib 内部依赖）、DocumentBuilderFactory、
+        // 以及 Apache HttpClient 的 HttpUriRequest/StringEntity 实现链。
+        // TeaVM 是静态可达性分析，引用到 game.i 就会把整棵树拉进来，所以这里保持断开。
 
         // ---- 相机 + rAF 主循环 ----
         try {
@@ -856,7 +859,7 @@ public class Bootstrap {
         if (camY > mh) camY = mh;
     }
 
-    private static void rwGameEngine() {
+    private static void rwGameEngineUnused() {
         step("43 new android.content.Context");
         android.content.Context ctx = new android.content.Context();
         step("44 new game.i (GameEngine)");

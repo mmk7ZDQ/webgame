@@ -18,7 +18,7 @@ mkdir -p build/gen
 for i in $(seq 1 "$MAX"); do
   OUT="/tmp/genloop$i"
   rm -rf "$OUT"; mkdir -p "$OUT"
-  "$JAVA" -cp "$LIB/*:$PWD/build/rw-nosync.jar:$PWD/stubs/stubs.jar:$PWD/build/rwutil.jar:$PWD/build/gen.jar:$PWD/build/launcher" \
+  "$JAVA" -cp "$LIB/*:$PWD/build/rw-nosync.jar:$PWD/stubs/stubs.jar:$PWD/build/gen.jar:$PWD/build/rwutil.jar:$PWD/build/launcher" \
     org.teavm.cli.TeaVMRunner -t js -O1 -d "$OUT" rwweb.Bootstrap > "/tmp/genloop$i.log" 2>&1
   N=$(grep -cE '^ERROR' "/tmp/genloop$i.log" || true)
   echo "迭代 $i：缺失 $N"

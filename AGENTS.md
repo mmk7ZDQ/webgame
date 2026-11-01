@@ -299,7 +299,7 @@ engine.a(ctx);                                                  // k.a(Context)
 它只生成第三方库（`org.*`）的类；`java.*`、`com.*`、`android.*`、`rwutil.*` 一律跳过
 （分别因为：不能自己定义、是游戏自己的类、是我们的层）。
 
-**当前卡点：7–10 个，且不再收敛。** 剩下的全是硬骨头：
+**当前卡点：5 个，且不再收敛。** 剩下的全是硬骨头：
 
 | 缺失 | 为什么自动生成解决不了 |
 |---|---|
@@ -307,7 +307,8 @@ engine.a(ctx);                                                  // k.a(Context)
 | `java.io.PrintWriter(File)` 构造 | 同上；且它作为 `throwable.printStackTrace(PrintWriter)` 的参数，重定向会坏签名 |
 | `InGameActivity.isFinishing()` | 来自 `Activity` 桩，需要给桩类补继承来的方法 |
 | `HttpUriRequest.setHeader` | 生成的接口已含该方法，但调用方要的是实现类（`HttpPost` 等一整条 httpclient 链） |
-| `StringEntity(String, ContentType)` | `GenMissing` 只生成无参构造 |
+| `DocumentBuilderFactory` | `javax.*`，生成后仍缺内部方法 |
+| `StringEntity(String, ContentType)` | 需要完整 httpclient 实现类 |
 
 **结论**：把 `game.i` 跑起来不是"再补几个桩"的量级 —— 它需要 TeaVM classlib 层面的扩展
 （`java.*` 那几个）加上一整条 Apache HttpClient 的假实现。这是一条有明确终点但很长的路。
@@ -442,3 +443,4 @@ engine.a(ctx);                                                  // k.a(Context)
 | 2026-11-01 | 第十八轮：**扫清引擎初始化的两个硬障碍**。① TeaVM 遇 monitor 指令 NPE → 写 ASM 工具把 1,100 条 monitor 换成 NOP（`build/rw-nosync.jar`），分析阶段从崩溃变为 13.8 秒通过；② gen-stubs 生成全部构造器重载；③ 手写 `android.content.Context` / `SharedPreferences`。当前卡在 69 个缺失符号 |
 | 2026-11-01 | 第十九轮：**运行时补齐 + 类/方法级重定向**。新增 `impl/rwutil/`（并发队列、锁、执行器、socket 桩、RT 补丁）；`StripMonitors` 扩展为「monitor 剥离 + 类重定向 + 方法重定向」三合一。缺失符号 87 → 35，但呈震荡（每修一批暴露新一批） |
 | 2026-11-01 | 第二十轮：**自动补桩工具链**。`GenMissing`（解析 TeaVM 日志用 ASM 按原类名生成桩）+ `gen-loop.sh`（编译→生成→合并→再编译的循环）。缺失符号 35 → 7~10 并停止收敛；发现**类重定向会让方法描述符里的类型一起改名**，从而破坏与 JDK 的签名一致性，故第三方库必须按原类名生成 |
+| 2026-11-01 | 第二十一轮：**ASM 访问器顺序 + new 重定向**。发现自定义 `ClassVisitor` 若放在 `ClassRemapper` 之内则完全不会被调用（必须在外层）；新增「只重定向 new 指令」的方案解决 `PrintWriter(File)` 这类 classlib 缺构造的问题（子类 is-a 关系保持签名一致）；`gen-stubs` 增加 `EXTRA_METHODS` 补父类方法。缺失符号 10 → 5 |
