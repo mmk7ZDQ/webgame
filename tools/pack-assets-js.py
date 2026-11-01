@@ -82,6 +82,23 @@ def main():
         for k, v in bundle.items():
             f.write('  %s: "%s",\n' % (json.dumps(k), v))
         f.write('};\n')
+        # 预解码所有 PNG：BitmapFactory 的同步解码靠这张表
+        f.write("""
+// 预解码：把每张 PNG 做成 <img>，供 BitmapFactory 同步取用
+window.__RW_IMAGES = {};
+window.__RW_IMAGES_PENDING = 0;
+(function () {
+  var A = window.__RW_ASSETS || {};
+  for (var k in A) {
+    if (!/\.png$/i.test(k)) continue;
+    var im = new Image();
+    im.src = 'data:image/png;base64,' + A[k];
+    window.__RW_IMAGES[k] = im;
+    window.__RW_IMAGES_PENDING++;
+    im.onload = im.onerror = function () { window.__RW_IMAGES_PENDING--; };
+  }
+})();
+""")
     print(f'✓ {out_js}  {len(bundle)} 个文件 / {total/1024:.0f} KB 原始')
 
 

@@ -11,7 +11,10 @@ package android.graphics;
 
 import java.io.InputStream;
 
+import android.content.res.AssetManager;
 import android.content.res.Resources;
+
+import org.teavm.jso.JSBody;
 
 public class BitmapFactory {
 
@@ -20,6 +23,23 @@ public class BitmapFactory {
 
     private static Bitmap placeholder() {
         return Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+    }
+
+    /** 从预解码的图片表取图；没有则返回 null */
+    @JSBody(params = {"name"}, script =
+            "var t = window.__RW_IMAGES || {};"
+            + "var im = t[name];"
+            + "if (!im || !im.complete || !im.naturalWidth) return null;"
+            + "return im;")
+    private static native Object lookupImage(String name);
+
+    private static Bitmap decodeNamed(String assetName) {
+        if (assetName == null) return null;
+        Object src = lookupImage(assetName);
+        if (src == null) return null;
+        org.teavm.jso.dom.html.HTMLImageElement img =
+                (org.teavm.jso.dom.html.HTMLImageElement) src;
+        return Bitmap.fromImageSource(img, img.getNaturalWidth(), img.getNaturalHeight());
     }
 
     public static Bitmap decodeResource(Resources res, int id) {
@@ -36,6 +56,16 @@ public class BitmapFactory {
     }
 
     public static Bitmap decodeStream(InputStream is, Rect outPadding, Options opts) {
+        if (is instanceof AssetManager.AssetStream) {
+            Bitmap b = decodeNamed(((AssetManager.AssetStream) is).assetName);
+            if (b != null) {
+                if (opts != null) {
+                    opts.outWidth = b.getWidth();
+                    opts.outHeight = b.getHeight();
+                }
+                return b;
+            }
+        }
         return placeholder();
     }
 

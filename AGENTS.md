@@ -448,8 +448,23 @@ main 返回，耗时 424ms        → 约 85ms/帧
 调用不抛异常但也什么都没发生。
 
 **`game.b` 是个 62 个类的子系统**（`game/b/*`），包含 TMX 解析、tileset 管理、
-位图加载（走 `m.e` / `m.fi`）。要让它跑起来不是「补几个桩」，而是让这整套东西
-在 Web 端工作 —— 包括位图的同步解码（我们的 `BitmapFactory` 目前返回 1x1 占位）。
+位图加载（走 `m.e` / `m.fi`）。
+
+### ✅ 同步位图解码已打通
+
+浏览器没有同步的图片解码 API（`Image.decode` 是异步的，而 `decodeResource` 是同步的）。
+解法是**「记住文件名 + 预解码表」**：
+
+1. `AssetManager.open(name)` 返回 `AssetStream`（`ByteArrayInputStream` 的子类，带 `assetName`）
+2. `pack-assets-js.py` 除了 base64 字符串，还生成一段自执行代码，把每张 PNG 做成
+   `<img src="data:image/png;base64,...">` 存进 `window.__RW_IMAGES`
+3. `BitmapFactory.decodeStream(is)` 看到 `is instanceof AssetStream`，就拿 `assetName`
+   去 `__RW_IMAGES` 查 —— 查到就 `Bitmap.fromImageSource(img, w, h)`
+
+实测：`decodeStream("tilesets/bitmaps/sand.png")` → **140×120**（真实贴图尺寸）。
+
+> 坑：`assets/tilesets/` 下的贴图路径不是 `terrain/bitmaps/sand.png`，而是
+> `bitmaps/sand.png` —— TMX 里的 `source` 已经带了 `terrain/` 前缀，拼的时候别再补一层。
 
 **现状**：资源能读（25443 字节）、XML 能解析（map 135x125、32 个 tileset）、
 引擎初始化与 tick 能跑 —— 但「引擎自己把那 32 个 tileset 加载成世界」这一步没打通。
@@ -612,3 +627,4 @@ TeaVM 不提供异常堆栈，下一步需要二分裁剪 `init()` 的方法体�
 | 2026-11-02 | 第二十七轮：**Xml 桥接 DOMParser + 全链路验证**。`rwutil.Xml` 改为代理真实 DOM，TMX 解析出 `root=map w=135 h=125`、遍历出 32 个 tileset。编译规模 481 → **1,896 类 / 16,890 方法**（真实值）。修 `build-engine.sh` 的 `set -e` 假失败与 rwutil 编译缺 TeaVM classpath |
 | 2026-11-02 | 第二十八轮：**`game.b` 类/包同名冲突修复 + 地图加载入口调研**。`com/corrodinggames/rts/game/b.class` 与 `game/b/` 包冲突，加入 `LAUNCHER_STRIP`；摸清 `game.b.l` 的 String 参数是 tileset 路径而非地图路径，真正的关卡加载在 `k.a(Activity, ab)`（需要造 `ab` 游戏视图实现）。站点已上线 GitHub Pages |
 | 2026-11-02 | 第二十九轮：**`ab` 接口实现 + 关卡入口再排查**。写了 `AbStub`（`appFramework.ab` 的 25 个方法空实现），`engine.a(activity, view)` 调用不抛异常但也没加载任何东西；反查确认 `k.a(Activity, ab)` 只是暂停/停止。`game.b` 是 62 个类的子系统（TMX 解析 + tileset + 位图加载），是「引擎加载地图」真正要跨过的门槛 |
+| 2026-11-02 | 第三十轮：**同步位图解码打通**。`AssetManager` 返回带 `assetName` 的 `AssetStream`；打包脚本额外生成 `window.__RW_IMAGES`（每张 PNG 预解码成 `<img>`）；`BitmapFactory.decodeStream` 按名字查表 → `Bitmap.fromImageSource`。实测 `sand.png` 解出 **140×120**（真实尺寸），不再是 1×1 占位 |

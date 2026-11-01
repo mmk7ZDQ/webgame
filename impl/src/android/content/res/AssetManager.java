@@ -48,11 +48,23 @@ public class AssetManager {
             + "return out.length ? out : [];")
     private static native String[] listPrefix(String prefix);
 
+    /**
+     * 带文件名的输入流 —— BitmapFactory 靠它知道自己在解哪张图，
+     * 才能从预解码的图片表里拿到同步可用的 ImageBitmap。
+     */
+    public static final class AssetStream extends ByteArrayInputStream {
+        public final String assetName;
+        AssetStream(byte[] data, String name) {
+            super(data);
+            this.assetName = name;
+        }
+    }
+
     /** 打开资源文件；找不到时返回空流而不是 null（引擎会检查 null 并抛错） */
     public InputStream open(String fileName) {
         String b64 = assetB64(fileName);
-        if (b64 == null) return new ByteArrayInputStream(new byte[0]);
-        return new ByteArrayInputStream(decodeBase64(b64));
+        if (b64 == null) return new AssetStream(new byte[0], fileName);
+        return new AssetStream(decodeBase64(b64), fileName);
     }
 
     public InputStream open(String fileName, int accessMode) {

@@ -953,7 +953,18 @@ public class Bootstrap {
                 rwutil.Xml.NodeList ts = root == null ? null : root.getElementsByTagName("tileset");
                 step("51 tilesets=" + (ts == null ? -1 : ts.getLength()));
 
-                // 让引擎自己的 TMX 解析器跑一遍（game.b.l）
+                // 同步位图解码验证：decodeStream 能不能拿到真图
+            try {
+                java.io.InputStream png = ctx.getAssets().open("tilesets/bitmaps/sand.png");
+                android.graphics.Bitmap bmp = android.graphics.BitmapFactory
+                        .decodeStream(png, null, null);
+                step("50b bitmap sand.png = "
+                        + (bmp == null ? "null" : bmp.getWidth() + "x" + bmp.getHeight()));
+            } catch (Throwable e) {
+                step("50b bitmap FAILED: " + e);
+            }
+
+            // 让引擎自己的 TMX 解析器跑一遍（game.b.l）
                 try {
                     step("52 new game.b.b()");
                     com.corrodinggames.rts.game.b.b mapObj = new com.corrodinggames.rts.game.b.b();
